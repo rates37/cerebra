@@ -5,7 +5,7 @@ from abc import abstractmethod
 from typing import List, Any, Union
 
 ##! Types:
-ARR = Union[npt.NDArray, float]
+ARR = Union[npt.NDArray]
 GRAD = Union[None, npt.NDArray]
 
 
