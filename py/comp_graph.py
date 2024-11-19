@@ -27,15 +27,63 @@ class Node(object):
     @abstractmethod
     def get_predecessors(self) -> List[Node]:
         pass
+    
+    @abstractmethod
+    def __str__(self) -> str:
+        pass
+
+    def __repr__(self) -> str:
+        return str(self)
 
     def zero_grad(self) -> None:
         # resets the gradient of the Node's output
         # pass
-        if self.out:
+        if self.out is not None:
             self.out_grad = np.zeros(self.out.shape)
         else:
             self.out_grad = np.zeros(1)
 
+    def topological_sort_ancestors(self) -> List[Node]:
+        # returns a list of ancestors in topological sorted order
+        output = []
+        visited = set()
+
+        def dfs(node: Node) -> None:
+            if node in visited:
+                return
+            # visit all predecessors:
+            for pred in node.get_predecessors():
+                dfs(pred)
+
+            # visit current node:
+            visited.add(node)
+
+            # add node to output once all predecessors are visited
+            output.append(node)
+
+        dfs(self)
+        return output
+    
+    def forward_pass(self) -> ARR:
+        # computes forward pass for the graph assuming current node is the output node
+        nodes = self.topological_sort_ancestors()
+        
+        for node in nodes:
+            node.forward()
+        
+        return self.out
+    
+    def backward_pass(self) -> None:
+        # computes gradients throughout the network working backward from current node
+        nodes = self.topological_sort_ancestors()
+        
+        # gradient of output w.r.t. output is 1:
+        self.out_grad = np.ones(self.out.shape)
+        
+        for node in reversed(nodes):
+            node.backward()
+        
+    
 
 # Value Node class: a node for a constant value
 class ValueNode(Node):
@@ -47,11 +95,11 @@ class ValueNode(Node):
         )
 
     def forward(self) -> ARR:
-        # reset gradient:
-        self.zero_grad()
-        
         # compute output:
         self.out = self.value
+
+        # reset gradient:
+        self.zero_grad()
 
         # return output:
         return self.out
@@ -61,10 +109,12 @@ class ValueNode(Node):
 
     def get_predecessors(self) -> List[Node]:
         return []
-    
+
     def set_value(self, value: ARR) -> None:
         self.value = value
 
+    def __str__(self) -> str:
+        return f"Value({self.value})"
 
 ##! Simple Operation Nodes:
 class PlusNode(Node):
@@ -76,11 +126,12 @@ class PlusNode(Node):
         self.out_grad: GRAD = None
 
     def forward(self) -> ARR:
+        # compute output:
+        self.out = self.x.out + self.y.out  #! recompute each time
+
         # reset gradient:
         self.zero_grad()
 
-        # compute output:
-        self.out = self.x.out + self.y.out  #! recompute each time
         return self.out
 
     def backward(self) -> ARR:
@@ -96,6 +147,9 @@ class PlusNode(Node):
 
     def get_predecessors(self) -> List[Node]:
         return [self.x, self.y]
+    
+    def __str__(self) -> str:
+        return f"Add({str(self.x)}, {str(self.y)})"
 
 
 class MultiplyNode(Node):
@@ -107,11 +161,12 @@ class MultiplyNode(Node):
         self.out_grad: GRAD = None
 
     def forward(self):
+        # compute output:
+        self.out = self.x.out * self.y.out
+
         # reset gradient:
         self.zero_grad()
 
-        # compute output:
-        self.out = self.x.out * self.y.out
         return self.out
 
     def backward(self):
@@ -130,42 +185,65 @@ class MultiplyNode(Node):
 
     def get_predecessors(self) -> List[Node]:
         return [self.x, self.y]
-
-
+    
+    def __str__(self) -> str:
+        return f"Multiply({str(self.x)}, {str(self.y)})"
 
 
 def testing() -> None:
     # create function h(x) = x + x^2 = plus(x, x^2) = plus(x, mult(x,x))
     x = ValueNode(None)
-    mult = MultiplyNode(x,x)
+    mult = MultiplyNode(x, x)
     f = PlusNode(x, mult)
+
+    values = [0, 1, 2, 3]
+
+    ## Testing single item inputs:
+    # for v in values:
+    #     print("\n===========")
+    #     x.set_value(np.array(v))
+
+    #     ## forward pass:
+    #     x.forward()
+    #     mult.forward()
+    #     f.forward()
+    #     # print outputs:
+    #     print(f"\tx\t=\t{x.out}")
+    #     print(f"\tx^2\t=\t{mult.out}")
+    #     print(f"\tx^2+x\t=\t{f.out}")
+    #     print(f"\tf(x)\t=\tx^2+x")
+
+    #     ## backward pass:
+    #     # set gradient of output w.r.t output equal to 1:
+    #     f.out_grad = 1
+    #     f.backward()
+    #     mult.backward()
+    #     x.backward()
+
+    #     print(f"\tf'(x)\t=\t{x.out_grad.item()}")
+
+    ## Testing vector inputs:
+    # x.set_value(np.array(values))
+    # x.forward()
+    # mult.forward()
+    # f.forward()
+
+    # f.out_grad = np.ones(f.out.shape)
+    # f.backward()
+    # mult.backward()
+    # x.backward()
+    # print(x.out_grad)
     
-    values = [0,1,2,3]
+    ## Testing topological sorting:
+    # print(f.topological_sort_ancestors())
     
-    for v in values:
-        print("\n===========")
-        x.set_value(np.array(v))
-        
-        ## forward pass:
-        x.forward()
-        mult.forward()
-        f.forward()
-        # print outputs:
-        print(f"\tx\t=\t{x.out}")
-        print(f"\tx^2\t=\t{mult.out}")
-        print(f"\tx^2+x\t=\t{f.out}")
-        print(f"\tf(x)\t=\tx^2+x")
-        
-        ## backward pass:
-        # set gradient of output w.r.t output equal to 1:
-        f.out_grad = 1
-        f.backward()
-        mult.backward()
-        x.backward()
-        
-        print(f"\tf'(x)\t=\t{x.out_grad.item()}")
-        
-    pass
+    ## Testing forward pass and backward passes:
+    x.set_value(np.array(values))
+    f.forward_pass()
+
+    f.out_grad = np.ones(f.out.shape)
+    f.backward_pass()
+    print(x.out_grad)
 
 
 if __name__ == "__main__":
