@@ -27,7 +27,7 @@ class Node(object):
     @abstractmethod
     def get_predecessors(self) -> List[Node]:
         pass
-    
+
     @abstractmethod
     def __str__(self) -> str:
         pass
@@ -63,27 +63,26 @@ class Node(object):
 
         dfs(self)
         return output
-    
+
     def forward_pass(self) -> ARR:
         # computes forward pass for the graph assuming current node is the output node
         nodes = self.topological_sort_ancestors()
-        
+
         for node in nodes:
             node.forward()
-        
+
         return self.out
-    
+
     def backward_pass(self) -> None:
         # computes gradients throughout the network working backward from current node
         nodes = self.topological_sort_ancestors()
-        
+
         # gradient of output w.r.t. output is 1:
         self.out_grad = np.ones(self.out.shape)
-        
+
         for node in reversed(nodes):
             node.backward()
-        
-    
+
 
 # Value Node class: a node for a constant value
 class ValueNode(Node):
@@ -116,6 +115,7 @@ class ValueNode(Node):
     def __str__(self) -> str:
         return f"Value({self.value})"
 
+
 ##! Simple Operation Nodes:
 class PlusNode(Node):
     # Node represents the operation x+y
@@ -147,7 +147,7 @@ class PlusNode(Node):
 
     def get_predecessors(self) -> List[Node]:
         return [self.x, self.y]
-    
+
     def __str__(self) -> str:
         return f"Add({str(self.x)}, {str(self.y)})"
 
@@ -185,7 +185,7 @@ class MultiplyNode(Node):
 
     def get_predecessors(self) -> List[Node]:
         return [self.x, self.y]
-    
+
     def __str__(self) -> str:
         return f"Multiply({str(self.x)}, {str(self.y)})"
 
@@ -233,10 +233,10 @@ def testing() -> None:
     # mult.backward()
     # x.backward()
     # print(x.out_grad)
-    
+
     ## Testing topological sorting:
     # print(f.topological_sort_ancestors())
-    
+
     ## Testing forward pass and backward passes:
     x.set_value(np.array(values))
     f.forward_pass()
