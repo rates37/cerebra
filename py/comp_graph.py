@@ -202,7 +202,7 @@ def testing() -> None:
     mult = MultiplyNode(x, x)
     f = PlusNode(x, mult)
 
-    values = [0, 1, 2, 3]
+    values = [-1.5, -1, 0, 1, 2, 3]
 
     ## Testing single item inputs:
     # for v in values:
@@ -244,12 +244,32 @@ def testing() -> None:
     # print(f.topological_sort_ancestors())
 
     ## Testing forward pass and backward passes:
-    x.set_value(np.array(values))
-    f.forward_pass()
+    # x.set_value(np.array(values))
+    # f.forward_pass()
 
-    f.out_grad = np.ones(f.out.shape)
-    f.backward_pass()
-    print(x.out_grad)
+    # f.out_grad = np.ones(f.out.shape)
+    # f.backward_pass()
+    # print(x.out_grad)
+    
+    ## Testing basic gradient descent:
+    num_steps = 50
+    learning_rate = 0.1
+    x.set_value(np.array(5))
+    
+    for i in range(num_steps):
+        # run forward pass:
+        output = f.forward_pass()
+        
+        # run backward pass:
+        f.backward_pass()
+        
+        # print current values:
+        print(f"Epoch {i+1}, x = {x.value}, f(x) = {output}, f'(x) = {[x.out_grad]}")
+        
+        # update x estimate:
+        x.set_value(np.array(x.value - learning_rate * x.out_grad))
+        
+    
 
 
 if __name__ == "__main__":
