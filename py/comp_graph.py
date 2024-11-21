@@ -83,6 +83,12 @@ class Node(object):
         for node in reversed(nodes):
             node.backward()
 
+    def __add__(self, other: Node) -> PlusNode:
+        return PlusNode(self, other)
+    
+    def __mul__(self, other: Node) -> MultiplyNode:
+        return MultiplyNode(self, other)
+
 
 # Value Node class: a node for a constant value
 class ValueNode(Node):
