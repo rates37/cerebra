@@ -264,7 +264,7 @@ def testing() -> None:
         f.backward_pass()
         
         # print current values:
-        print(f"Epoch {i+1}, x = {x.value}, f(x) = {output}, f'(x) = {[x.out_grad]}")
+        print(f"Epoch {i+1}, x = {x.value}, f(x) = {output}, f'(x) = {x.out_grad.item()}")
         
         # update x estimate:
         x.set_value(np.array(x.value - learning_rate * x.out_grad))
