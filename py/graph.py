@@ -90,6 +90,16 @@ class Node:
         return to_node(other).__matmul__(self)
 
 
+class Variable(Node):
+    """
+    Special case of node that is a leaf node of the computational graph.
+    Can be used as input or parameter to the graph
+    """
+
+    def __init__(self, value: Union[np.ndarray, float, int], name: Optional[str] = None) -> None:
+        super().__init__(value, parents=[], op=None, name=name)
+
+
 #! ===================
 #!     Operations
 #! ===================
