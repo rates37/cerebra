@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Union, List
 
 #! =========
 #!   Types
@@ -16,7 +16,11 @@ OptionalArray = Optional[Array]
 #! ===============
 class Node:
     def __init__(
-        self, value, parents: list[Node] = None, op: Operation = None, name: str = None
+        self,
+        value: Union[np.ndarray, float, int],
+        parents: Optional[List[Node]] = None,
+        op: Optional[Operation] = None,
+        name: Optional[str] = None
     ) -> None:
         if not isinstance(value, np.ndarray):
             value = np.array(value)
@@ -26,7 +30,7 @@ class Node:
         self.grad = None  # will be computed in backprop
         self.name = name
 
-    def backward(self, grad=None) -> None:
+    def backward(self, grad: Optional[np.ndarray] = None) -> None:
         nodes = self.top_sort_ancestors()
         for node in nodes:
             node.grad = np.zeros_like(node.value)
@@ -39,11 +43,11 @@ class Node:
                 for parent, g in zip(node.parents, grads):
                     parent.grad = parent.grad + g
 
-    def top_sort_ancestors(self) -> list[Node]:
+    def top_sort_ancestors(self) -> List[Node]:
         visited = set()
         order = []
 
-        def dfs(node):
+        def dfs(node: Node) -> None:
             if node not in visited:
                 visited.add(node)
                 for parent in node.parents:
@@ -53,29 +57,37 @@ class Node:
         dfs(self)
         return order
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         # so that class can be used in set
         return id(self)
-    
-    ## magic methods:
-    def __add__(self, other):
-        return add(self, other)
-    
-    def __radd__(self, other):
-        return add(other, self)
 
-    def __mul__(self, other):
-        return multiply(self, other)
-    
-    def __rmul__(self, other):
-        return multiply(other, self)
-    
-    def __matmul__(self, other):
-        return matmul(self, other)
-    
-    def __rmatmul__(self, other):
-        return matmul(other, self)
-    
+    # magic methods:
+    def __add__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
+        other = to_node(other)
+        op = Add()
+        new_val = op.forward(self.value, other.value)
+        return Node(new_val, parents=[self, other], op=op)
+
+    def __radd__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
+        return to_node(other).__add__(self)
+
+    def __mul__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
+        other = to_node(other)
+        op = Multiply()
+        new_val = op.forward(self.value, other.value)
+        return Node(new_val, parents=[self, other], op=op)
+
+    def __rmul__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
+        return to_node(other).__mul__(self)
+
+    def __matmul__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
+        other = to_node(other)
+        op = MatMul()
+        new_val = op.forward(self.value, other.value)
+        return Node(new_val, parents=[self, other], op=op)
+
+    def __rmatmul__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
+        return to_node(other).__matmul__(self)
 
 
 #! ===================
@@ -83,37 +95,46 @@ class Node:
 #! ===================
 class Operation(ABC):
     @abstractmethod
-    def forward(self, *inputs):
+    def forward(self, *inputs: np.ndarray) -> np.ndarray:
         pass
 
     @abstractmethod
-    def backward(self, output_grad, node):
+    def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
+        """Given gradient of output and the node (with parents), finds gradients for each parent
+
+        Args:
+            output_grad (np.ndarray): The gradient of the output of the operation
+            node (Node): The output node
+
+        Returns:
+            List[np.ndarray]: A list of gradients for each parent of the node
+        """
         pass
 
 
 class Add(Operation):
-    def forward(self, a, b):
+    def forward(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
         return a + b
 
-    def backward(self, output_grad, node):
+    def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
         a_val, b_val = node.parents[0].value, node.parents[1].value
         return [output_grad, output_grad]
 
 
 class Multiply(Operation):
-    def forward(self, a, b):
+    def forward(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
         return a * b
 
-    def backward(self, output_grad, node):
+    def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
         a_val, b_val = node.parents[0].value, node.parents[1].value
         return [output_grad * b_val, output_grad * a_val]
 
 
 class MatMul(Operation):
-    def forward(self, a, b):
+    def forward(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
         return a @ b
 
-    def backward(self, output_grad, node):
+    def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
         a_val = node.parents[0].value
         b_val = node.parents[1].value
         return [output_grad @ b_val.T, a_val.T @ output_grad]
@@ -122,26 +143,5 @@ class MatMul(Operation):
 #! =====================
 #!   Utility Functions
 #! =====================
-def to_node(x):
+def to_node(x: Union[Node, np.ndarray, float, int]) -> Node:
     return x if isinstance(x, Node) else Node(x)
-
-
-def add(a, b):
-    a, b = to_node(a), to_node(b)
-    op = Add()
-    value = op.forward(a.value, b.value)
-    return Node(value, parents=[a, b], op=op)
-
-
-def multiply(a, b):
-    a, b = to_node(a), to_node(b)
-    op = Multiply()
-    value = op.forward(a.value, b.value)
-    return Node(value, parents=[a, b], op=op)
-
-
-def matmul(a, b):
-    a, b = to_node(a), to_node(b)
-    op = MatMul()
-    value = op.forward(a.value, b.value)
-    return Node(value, parents=[a, b], op=op)
