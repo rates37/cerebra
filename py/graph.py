@@ -140,6 +140,25 @@ class MatMul(Operation):
         return [output_grad @ b_val.T, a_val.T @ output_grad]
 
 
+class ReLU(Operation):
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        self.mask = x > 0
+        return np.maximum(x, 0)
+
+    def backward(self, output_grad, node):
+        x_val = node.parents[0].value
+        grad = output_grad * (x_val > 0)
+        return [grad]
+
+
+# used as a separate function since no operator to overload
+def relu(x: Union[Node, np.ndarray, float, int]) -> Node:
+    x = to_node(x)
+    op = ReLU()
+    val = op.forward(x.value)
+    return Node(val, parents=[x], op=op)
+
+
 #! =====================
 #!   Utility Functions
 #! =====================
