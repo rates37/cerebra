@@ -1,4 +1,4 @@
-from graph import Parameter
+from network import Parameter
 from typing import List
 import numpy as np
 
