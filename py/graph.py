@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
 from abc import ABC, abstractmethod
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Tuple
 
 #! =========
 #!   Types
@@ -88,13 +88,13 @@ class Node:
 
     def __rmatmul__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
         return to_node(other).__matmul__(self)
-    
+
     def __sub__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
         other = to_node(other)
         op = Sub()
         new_val = op.forward(self.value, other.value)
         return Node(new_val, parents=[self, other], op=op)
-    
+
     def __rsub__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
         return to_node(other).__sub__(self)
 
@@ -137,7 +137,11 @@ class Add(Operation):
 
     def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
         a_val, b_val = node.parents[0].value, node.parents[1].value
-        return [output_grad, output_grad]
+
+        return [
+            unbroadcast(output_grad, a_val.shape),
+            unbroadcast(output_grad, b_val.shape)
+        ]
 
 
 class Multiply(Operation):
@@ -146,7 +150,10 @@ class Multiply(Operation):
 
     def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
         a_val, b_val = node.parents[0].value, node.parents[1].value
-        return [output_grad * b_val, output_grad * a_val]
+        return [
+            unbroadcast(output_grad * b_val, a_val.shape),
+            unbroadcast(output_grad * a_val, b_val.shape)
+        ]
 
 
 class MatMul(Operation):
@@ -162,11 +169,14 @@ class MatMul(Operation):
 class Sub(Operation):
     def forward(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
         return a - b
-    
+
     def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
         a_val = node.parents[0].value
         b_val = node.parents[1].value
-        return [output_grad, -output_grad]
+        return [
+            unbroadcast(output_grad, a_val.shape),
+            unbroadcast(-output_grad, b_val.shape)
+        ]
 
 
 class ReLU(Operation):
@@ -193,3 +203,15 @@ def relu(x: Union[Node, np.ndarray, float, int]) -> Node:
 #! =====================
 def to_node(x: Union[Node, np.ndarray, float, int]) -> Node:
     return x if isinstance(x, Node) else Node(x)
+
+
+def unbroadcast(grad: np.ndarray, shape: Tuple[int, ...]) -> np.ndarray:
+    # reduce extra dimensions introduced by broadcasting:
+    while len(grad.shape) > len(shape):
+        grad = grad.sum(axis=0)
+
+    # sum over dimensions that were originally 1:
+    for axis, dimension in enumerate(shape):
+        if dimension == 1:
+            grad = grad.sum(axis=axis, keepdims=True)
+    return grad
