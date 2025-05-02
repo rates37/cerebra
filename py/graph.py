@@ -88,6 +88,15 @@ class Node:
 
     def __rmatmul__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
         return to_node(other).__matmul__(self)
+    
+    def __sub__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
+        other = to_node(other)
+        op = Sub()
+        new_val = op.forward(self.value, other.value)
+        return Node(new_val, parents=[self, other], op=op)
+    
+    def __rsub__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
+        return to_node(other).__sub__(self)
 
 
 class Variable(Node):
@@ -148,6 +157,16 @@ class MatMul(Operation):
         a_val = node.parents[0].value
         b_val = node.parents[1].value
         return [output_grad @ b_val.T, a_val.T @ output_grad]
+
+
+class Sub(Operation):
+    def forward(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
+        return a - b
+    
+    def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
+        a_val = node.parents[0].value
+        b_val = node.parents[1].value
+        return [output_grad, -output_grad]
 
 
 class ReLU(Operation):
