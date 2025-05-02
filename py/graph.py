@@ -98,6 +98,11 @@ class Node:
     def __rsub__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
         return to_node(other).__sub__(self)
 
+    def __neg__(self) -> Node:
+        op = Neg()
+        new_val = op.forward(self.value)
+        return Node(new_val, parents=[self], op=op)
+
 
 class Variable(Node):
     """
@@ -177,6 +182,14 @@ class Sub(Operation):
             unbroadcast(output_grad, a_val.shape),
             unbroadcast(-output_grad, b_val.shape)
         ]
+
+
+class Neg(Operation):
+    def forward(self, a: np.ndarray) -> np.ndarray:
+        return -a
+
+    def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
+        return [unbroadcast(-output_grad, node.parents[0].value.shape)]
 
 
 class ReLU(Operation):
