@@ -32,7 +32,7 @@ class Linear(Module):
         super().__init__()
         # Normal Xavier Initialisation
         self.weight = Parameter(
-            np.random.randn(in_features, out_features) * np.sqrt(2 / (in_features+out_features)),
+            np.random.randn(in_features, out_features) * np.sqrt(2 / (in_features)),
             name="weight"
         )
 
