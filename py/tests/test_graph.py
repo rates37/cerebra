@@ -8,7 +8,7 @@ EPSILON = 1e-6
 
 class TestNode(unittest.TestCase):
     def setUp(self) -> None:
-        pass
+        self.default_rng = np.random.default_rng(69)
 
     def tearDown(self) -> None:
         pass
@@ -106,17 +106,50 @@ class TestNode(unittest.TestCase):
 
 
     def test_node_subtraction(self) -> None:
-        pass
+        # Test 1: Vector - vector
+        a = Node(np.array([10,20,30]))
+        b = Node(np.array([1,2,3]))
+        c = a - b
+        self.assertTrue(np.allclose(c.value, np.array([9,18,27]), atol=EPSILON))
+
+        # Test 2: Vector - scalar
+        a = Node(np.array([10.0, 20.0]))
+        b_val = 3.0
+        c = a - b_val
+        self.assertTrue(np.allclose(c.value, np.array([7.0, 17.0]), atol=EPSILON))
+
+        # Test 3: Scalar - vector
+        a_val = 100.0
+        b = Node(np.array([10, 20]))
+        c = a_val - b
+        self.assertTrue(np.allclose(c.value, np.array([90, 80]), atol=EPSILON))
+
+        # Test 4: Matrix - matrix:
+        a = Node(np.array([1, 2, 3]))
+        b = Node(np.array([4, 5, 6]))
+        c = a - b
+        self.assertTrue(np.allclose(c.value, np.array([-3, -3, -3]), atol=EPSILON))
+
 
     def test_node_matrix_multiplication(self) -> None:
-        a = Node(np.array([[0.17768567, 0.39771961, 0.92563573, 0.66784523],
-                           [0.62486733, 0.40113929, 0.57849025, 0.61530686],
-                           [0.55179607, 0.96602099, 0.57536875, 0.64842823]]))
-        b = Node(np.array([[0.66110405, 0.86829835],
-                           [0.66554035, 0.39163418],
-                           [0.0042813, 0.71459745],
-                           [0.23730456, 0.59034684]]))
-        pass
+        # Test 1: Node @ Node
+        a_val = self.default_rng.random((2,3))
+        b_val = self.default_rng.random((3,4))
+        a = Node(a_val)
+        b = Node(b_val)
+        c = a @ b
+        self.assertTrue(np.allclose(c.value, a_val @ b_val, atol=EPSILON))
+
+        # Test 2: Node @ np.ndarray
+        d = a @ b_val
+        self.assertTrue(np.allclose(d.value, a_val @ b_val, atol=EPSILON))
+
+        #! NOTE: this doesn't work, since Python tries to call the __mul__ method
+        #!  of the LEFT operand first
+        # # Test 3: np.ndarray @ Node
+        # e = a_val @ b
+        # self.assertTrue(np.allclose(e.value, a_val @ b_val, atol=EPSILON))
+
 
     def test_node_negation(self) -> None:
         pass
