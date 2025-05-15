@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from cerebra import Node
+from cerebra import Node, relu
 
 EPSILON = 1e-6
 
@@ -158,4 +158,36 @@ class TestNode(unittest.TestCase):
         self.assertEqual(len(b.parents), 1)
 
     def test_top_sort(self) -> None:
-        pass
+        # Test 1: Complex layered graph
+        a = Node(1, name="a")
+        b = Node(2, name="b")
+        c = a + b; 
+        c.name = "c" # c = a+b
+        d = c * a; 
+        d.name = "d" # d = c*a
+        e = relu(d); 
+        e.name = "e" # e = relu(d) = relu(c*a) = relu((a+b)a)
+
+        order = e.top_sort_ancestors()
+
+        # Expected order: a, b, c, d, e (or b, a, c, d, e)
+        # The key is that parents must come before children
+        self.assertEqual(len(order), 5)
+        self.assertIn(a, order)
+        self.assertIn(b, order)
+        self.assertIn(c, order)
+        self.assertIn(d, order)
+        self.assertIn(e, order)
+
+        self.assertLess(order.index(a), order.index(c))
+        self.assertLess(order.index(b), order.index(c))
+        self.assertLess(order.index(c), order.index(d))
+        self.assertLess(order.index(a), order.index(d)) # 'a' is also parent of 'd'
+        self.assertLess(order.index(d), order.index(e))
+        self.assertIs(order[-1], e) # The node itself should be last
+
+        # Test 2: Test with a single node
+        f = Node(10, name="f")
+        order_f = f.top_sort_ancestors()
+        self.assertEqual(len(order_f), 1)
+        self.assertIs(order_f[0], f)
