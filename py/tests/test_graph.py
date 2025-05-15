@@ -152,7 +152,10 @@ class TestNode(unittest.TestCase):
 
 
     def test_node_negation(self) -> None:
-        pass
+        a = Node(np.array([1,-2,0]))
+        b = -a
+        self.assertTrue(np.allclose(b.value, np.array([-1,2,0]), atol=EPSILON))
+        self.assertEqual(len(b.parents), 1)
 
     def test_top_sort(self) -> None:
         pass
