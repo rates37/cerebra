@@ -256,3 +256,34 @@ class TestNode(unittest.TestCase):
         self.assertTrue(np.allclose(z.grad, np.array(1.0)))
         self.assertTrue(np.allclose(y.grad, np.array(x.value)))
         self.assertTrue(np.allclose(x.grad, np.array(y.value)))
+
+    def test_backward_broadcasting(self) -> None:
+        x_val = np.array([[1., 2.], [3., 4.]])
+        y_val = np.array([[10., 20.]]) # Will broadcast to [[10,20],[10,20]]
+        x = Node(x_val)
+        y = Node(y_val)
+
+        # Test addition
+        z_addition = x+y
+        z_addition.backward()
+
+        # dL/dx = dL / dz * dz/dx = [[1,1], [1,1]]
+        self.assertTrue(np.allclose(x.grad, np.array([[1,1],[1,1]]), atol=EPSILON))
+        # dL/dy = dL / dz * dz/dy, summed along axis 0 = [[2,2], [2,2]]
+        self.assertTrue(np.allclose(y.grad, np.array([[2,2]]), atol=EPSILON))
+
+        # Reset values for next test:
+        x_val = np.array([[1., 2.], [3., 4.]])
+        y_val = np.array([[10., 20.]]) # Will broadcast to [[10,20],[10,20]]
+        x = Node(x_val)
+        y = Node(y_val)
+
+        # Test multiplication
+        z_multiplication = x*y
+        z_multiplication.backward()
+
+        # dL / dx = dL / dz * dz/dx = dL/dz * y broadcasted
+        self.assertTrue(np.allclose(x.grad, np.array([y_val,y_val]), atol=EPSILON))
+
+        # dL / dy = dL / dz * dz/dy = dL/dz * x summed along axis 0
+        self.assertTrue(np.allclose(y.grad, np.sum(x_val, axis=0), atol=EPSILON))
