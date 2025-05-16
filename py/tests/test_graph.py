@@ -170,7 +170,7 @@ class TestNode(unittest.TestCase):
 
         order = e.top_sort_ancestors()
 
-        # Expected order: a, b, c, d, e (or b, a, c, d, e)
+        # Expected orders: (a, b, c, d, e) or (b, a, c, d, e)
         # The key is that parents must come before children
         self.assertEqual(len(order), 5)
         self.assertIn(a, order)
@@ -179,10 +179,12 @@ class TestNode(unittest.TestCase):
         self.assertIn(d, order)
         self.assertIn(e, order)
 
+        # need to explicitly check relative ordering since multiple valid topological ordering
+        #  may exist
         self.assertLess(order.index(a), order.index(c))
         self.assertLess(order.index(b), order.index(c))
         self.assertLess(order.index(c), order.index(d))
-        self.assertLess(order.index(a), order.index(d)) # 'a' is also parent of 'd'
+        self.assertLess(order.index(a), order.index(d))
         self.assertLess(order.index(d), order.index(e))
         self.assertIs(order[-1], e) # The node itself should be last
 
@@ -191,3 +193,66 @@ class TestNode(unittest.TestCase):
         order_f = f.top_sort_ancestors()
         self.assertEqual(len(order_f), 1)
         self.assertIs(order_f[0], f)
+
+    def test_backward_simple_add(self) -> None:
+        # Test 1: vector + vector
+        a = Node(np.array([1,2]))
+        b = Node(np.array([3,4]))
+        c = a + b
+        c.backward()
+
+        # check gradients exist:
+        self.assertIsNotNone(a.grad)
+        self.assertIsNotNone(b.grad)
+        self.assertIsNotNone(c.grad)
+
+        # check gradients are correct:
+        self.assertTrue(np.allclose(c.grad, np.array([1,1]), atol=EPSILON))
+        self.assertTrue(np.allclose(a.grad, np.array([1,1]), atol=EPSILON))
+        self.assertTrue(np.allclose(b.grad, np.array([1,1]), atol=EPSILON))
+
+        # todo: add more tests
+    
+    def test_backward_simple_mul(self) -> None:
+        # Test 1: vector + vector
+        a = Node(np.array([1,2]))
+        b = Node(np.array([3,4]))
+        c = a * b
+        c.backward()
+
+        # check gradients exist:
+        self.assertIsNotNone(a.grad)
+        self.assertIsNotNone(b.grad)
+        self.assertIsNotNone(c.grad)
+
+        # check gradients are correct:
+        self.assertTrue(np.allclose(c.grad, np.array([1,1]), atol=EPSILON))  # dL/dc = 1
+        self.assertTrue(np.allclose(a.grad, b.value, atol=EPSILON))  # dL/da = dL/dc * dc/da = 1 * d/da(a*b) = b
+        self.assertTrue(np.allclose(b.grad, a.value, atol=EPSILON))  # dL/db = dL/dc * dc/db = 1 * d/db(a*b) = a
+
+        # todo: add more tests
+
+    def test_backward_chain_rule(self) -> None:
+        x = Node(2.0, name="x")
+        y = Node(3.0, name="y")
+        z = Node(4.0, name="z")
+
+        # f = (x*y) + z
+        a = x * y  # a = x*y = 6
+        a.name = "a"
+        f = a + z  # f = a+z = 10
+        f.name = "f"  
+
+        f.backward()  # dL/df = 1
+
+        # dL/df = 1
+        # dL/da = dL/df * df/da = 1 * 1 = 1
+        # dL/dz = dL/df * df/dz = 1 * 1 = 1
+        # dL/dx = dL/da * da/dx = 1 * y = 3
+        # dL/dy = dL/da * da/dy = 1 * x = 2
+
+        self.assertTrue(np.allclose(f.grad, np.array(1.0)))
+        self.assertTrue(np.allclose(a.grad, np.array(1.0)))
+        self.assertTrue(np.allclose(z.grad, np.array(1.0)))
+        self.assertTrue(np.allclose(y.grad, np.array(x.value)))
+        self.assertTrue(np.allclose(x.grad, np.array(y.value)))
