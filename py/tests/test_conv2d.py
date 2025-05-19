@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from cerebra import Node, Conv2d, conv2d, Parameter, Operation, Conv2d
+from cerebra import Node, Conv2d, Parameter, Operation
 
 EPSILON = 1e-6
 
@@ -13,6 +13,10 @@ class TestConv2d(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
+    #! =========================
+    #!    Forward Conv Tests
+    #! =========================
+
     def test_conv2d_forward_no_bias(self):
         x_val = np.array([[[[1, 2], [3, 4]]]], dtype=np.float32)
         w_val = np.array([[[[1, 0], [0, 1]]]], dtype=np.float32)
@@ -23,7 +27,7 @@ class TestConv2d(unittest.TestCase):
 
         self.assertTrue(np.allclose(output, expected_val, atol=EPSILON))
 
-    def test_conv2d_forward_no_bias(self):
+    def test_conv2d_forward_with_bias(self):
         x_val = np.array([[[[1, 2], [3, 4]]]], dtype=np.float32)
         w_val = np.array([[[[1, 0], [0, 1]]]], dtype=np.float32)
         b_val = np.array([0.5], dtype=np.float32)
@@ -81,3 +85,7 @@ class TestConv2d(unittest.TestCase):
         expected_out = np.array([[[[10.1]], [[15.2]]]], dtype=np.float32)
         out = op.forward(x_val, w_val, b_val)
         self.assertTrue(np.allclose(out, expected_out, atol=EPSILON))
+
+    #! ==========================
+    #!    Backward Conv Tests
+    #! ==========================
