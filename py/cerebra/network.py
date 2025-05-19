@@ -1,7 +1,7 @@
 import numpy as np
 from abc import ABC, abstractmethod
 from .graph import Node, Variable, Operation, to_node
-from typing import Union, Optional, Any, List
+from typing import Union, Optional, Any, List, Tuple
 
 
 class Parameter(Variable):
@@ -80,3 +80,38 @@ def cross_entropy_loss(x: Union[Node, np.ndarray, float, int], target: np.ndarra
     op = CrossEntropyLoss(target)
     val = op.forward(x.value)
     return Node(val, parents=[x], op=op)
+
+
+class Conv2d(Operation):
+    def __init__(self, stride: int = 1, padding: int = 0) -> None:
+        pass
+
+    def forward(self, x: np.ndarray, weight: np.ndarray, bias: Optional[np.ndarray] = None) -> np.ndarray:
+        pass
+
+    def backward(self, grad_output: np.ndarray, node: Node) -> List[np.ndarray]:
+        pass
+
+
+def conv2d(x: Union[Node, np.ndarray],
+           weight: Union[Node, np.ndarray],
+           bias: Optional[Union[Node, np.ndarray]] = None,
+           stride: int = 1,
+           padding: int = 0
+           ) -> Node:
+    pass
+
+
+class Conv2dLayer(Module):
+    def __init__(self,
+                 in_channels: int,
+                 out_channels: int,
+                 kernel_size: Union[int, Tuple[int, int]],
+                 stride: int = 1,
+                 padding: int = 0,
+                 bias: bool = True
+                 ) -> None:
+        pass
+
+    def forward(self, x: Node) -> Node:
+        pass
