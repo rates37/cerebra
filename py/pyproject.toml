@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["cerebra"]
+
+[project]
+name = "cerebra"
+version = "0.1.0"
+description = "A Neural Network Library in Python"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+dependencies = ["numpy"]
+authors = [{ name = "Satya Jhaveri" }]
+
+
