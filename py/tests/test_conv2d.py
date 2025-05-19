@@ -32,7 +32,7 @@ class TestConv2d(unittest.TestCase):
         w_val = np.array([[[[1, 0], [0, 1]]]], dtype=np.float32)
         b_val = np.array([0.5], dtype=np.float32)
         # expected value is: (1*1 + 2*0 + 3*0 + 4*1) + 0.5 = 5.5
-        expected_val = np.array([5])
+        expected_val = np.array([5.5])
         op = Conv2d(stride=1, padding=0)
         output = op.forward(x=x_val, weight=w_val, bias=b_val)
 
