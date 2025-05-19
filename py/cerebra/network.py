@@ -82,24 +82,61 @@ def cross_entropy_loss(x: Union[Node, np.ndarray, float, int], target: np.ndarra
     return Node(val, parents=[x], op=op)
 
 
+# function to convert a convolutional filter(s) to columns:
+def convert_to_col(x: np.ndarray, kernel_h: int, kernel_w: int) -> Tuple[np.ndarray, int, int]:
+    # extract shape
+    N, C, H, W = x.shape
+    out_h = H - kernel_h
+    out_w = W - kernel_w
+    col = np.empty((N, C, kernel_h, kernel_w, out_h, out_w), dtype=x.dtype)
+
+    # fill out cols:
+    for y in range(kernel_h):
+        y_max = y + out_h
+
+        for x_i in range(kernel_w):
+            x_max = x_i + out_w
+            col[:, :, y, x_i, :, :] = x[:,:, y:y_max, x_i:x_max]
+    col = col.reshape(N, C*kernel_h*kernel_w, out_h * out_w)
+    return col, out_h, out_w
+
+
+def convert_from_col(cols: np.ndarray, x_shape: Tuple[int, int, int, int], kernel_h: int, kernel_w: int) -> np.ndarray:
+    pass
+
 class Conv2d(Operation):
     def __init__(self, stride: int = 1, padding: int = 0) -> None:
+        # todo: incorporate stride
+        # todo: incorporate padding
         pass
 
     def forward(self, x: np.ndarray, weight: np.ndarray, bias: Optional[np.ndarray] = None) -> np.ndarray:
-        pass
+        # store shape of input and parameters:
+        self.x_shape = x.shape
+        N, *_ = x.shape
+        C_out, C_in, kh, kw = weight.shape
+        self.kernel_h, self.kernel_w = kh, kw
+
+        # convert to col
+        col, out_h, out_w = convert_to_col(x, kh, kw)
+        # store shape of col matrix
+        self.col = col
+        self.out_h = out_h
+        self.out_w = out_w
+
+        weight_col = weight.reshape(C_out, -1)
+        output = np.empty((N, C_out, out_h * out_w), dtype=x.dtype)
+        for i in range(N):
+            output[i] = weight_col @ col[i]
+        
+        # apply bias:
+        if bias is not None:
+            output += bias.reshape(1, C_out, 1)
+        output = output.reshape(N, C_out, out_h, out_w)
+        return output
 
     def backward(self, grad_output: np.ndarray, node: Node) -> List[np.ndarray]:
         pass
-
-
-def conv2d(x: Union[Node, np.ndarray],
-           weight: Union[Node, np.ndarray],
-           bias: Optional[Union[Node, np.ndarray]] = None,
-           stride: int = 1,
-           padding: int = 0
-           ) -> Node:
-    pass
 
 
 class Conv2dLayer(Module):
