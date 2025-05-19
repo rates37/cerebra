@@ -83,20 +83,29 @@ def cross_entropy_loss(x: Union[Node, np.ndarray, float, int], target: np.ndarra
 
 
 # function to convert a convolutional filter(s) to columns:
-def convert_to_col(x: np.ndarray, kernel_h: int, kernel_w: int) -> Tuple[np.ndarray, int, int]:
+def convert_to_col(x: np.ndarray, kernel_h: int, kernel_w: int, stride: int, padding: int) -> Tuple[np.ndarray, int, int]:
     # extract shape
     N, C, H, W = x.shape
-    out_h = H - kernel_h
-    out_w = W - kernel_w
+
+    # apply padding:
+    H += 2*padding
+    W += 2*padding
+    x = np.pad(x, ((0,0), (0,0), (padding, padding), (padding, padding)), mode='constant')
+
+    # compute output shape
+    out_h = (H - kernel_h) // stride + 1
+    out_w = (W - kernel_w) // stride + 1
+
+    # create output columns matrix:
     col = np.empty((N, C, kernel_h, kernel_w, out_h, out_w), dtype=x.dtype)
 
     # fill out cols:
     for y in range(kernel_h):
-        y_max = y + out_h
+        y_max = y + out_h*stride
 
         for x_i in range(kernel_w):
-            x_max = x_i + out_w
-            col[:, :, y, x_i, :, :] = x[:,:, y:y_max, x_i:x_max]
+            x_max = x_i + out_w*stride
+            col[:, :, y, x_i, :, :] = x[:,:, y:y_max:stride, x_i:x_max:stride]
     col = col.reshape(N, C*kernel_h*kernel_w, out_h * out_w)
     return col, out_h, out_w
 
@@ -106,9 +115,10 @@ def convert_from_col(cols: np.ndarray, x_shape: Tuple[int, int, int, int], kerne
 
 class Conv2d(Operation):
     def __init__(self, stride: int = 1, padding: int = 0) -> None:
-        # todo: incorporate stride
-        # todo: incorporate padding
-        pass
+        # todo: allow for differing x and y stride/paddings
+        # todo: convert stride / padding type from int to Union[int, Tuple[int, int]]
+        self.stride = stride
+        self.padding = padding
 
     def forward(self, x: np.ndarray, weight: np.ndarray, bias: Optional[np.ndarray] = None) -> np.ndarray:
         # store shape of input and parameters:
@@ -118,7 +128,7 @@ class Conv2d(Operation):
         self.kernel_h, self.kernel_w = kh, kw
 
         # convert to col
-        col, out_h, out_w = convert_to_col(x, kh, kw)
+        col, out_h, out_w = convert_to_col(x, kh, kw, self.stride, self.padding)
         # store shape of col matrix
         self.col = col
         self.out_h = out_h
