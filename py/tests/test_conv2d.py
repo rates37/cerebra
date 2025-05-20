@@ -1,9 +1,49 @@
 import unittest
 import numpy as np
-
+from typing import Callable
 from cerebra import Node, Conv2d, Parameter, Operation
 
 EPSILON = 1e-6
+
+
+def numerical_gradient(func: Callable[[None], Node], node: Node, h=1e-6) -> np.ndarray:
+    """Compute gradient of node w.r.t. input
+
+    Args:
+        func (_type_): Callable that when invoked, re-evaluates computational graph
+                        based on the current state of `node`.
+        node (Node): The node whose value attribute will be altered to calculate the
+                        gradient
+        h (_type_, optional): Small perturbation value. Defaults to 1e-6.
+
+    Returns:
+        np.ndarray: Numpy array representing the numerically calculated gradient. Of same 
+                        shape as `node.value`.
+    """
+    input_value = node.value.copy()
+    grad = np.zeros_like(input_value, dtype=np.float32)
+
+    for i in np.ndindex(input_value.shape):
+        val = input_value[i]
+
+        # calculate f(x+h):
+        x_plus_h = input_value.copy()
+        x_plus_h[i] = val + h
+        node.value = x_plus_h
+        f_x_plus_h = func().value.item()  # func always returns a scalar (eg total loss)
+
+        # calculate f(x-h):
+        x_minus_h = input_value.copy()
+        x_minus_h[i] = val + h
+        node.value = x_minus_h
+        f_x_minus_h = func().value.item()
+
+        # central difference method:
+        grad[i] = (f_x_plus_h - f_x_minus_h) / (2 * h)
+
+    # restore input value of node
+    node.value = input_value
+    return grad
 
 
 class TestConv2d(unittest.TestCase):
@@ -89,3 +129,65 @@ class TestConv2d(unittest.TestCase):
     #! ==========================
     #!    Backward Conv Tests
     #! ==========================
+    # generic function to test backward method:
+    def _check_conv_op_backward(
+            self,
+            op: Operation,
+            x_val: np.ndarray,
+            w_val: np.ndarray,
+            b_val=None,
+            grad_val=None
+    ) -> None:
+        # copy input values:
+        x_node = Node(x_val.copy())
+        w_node = Node(w_val.copy())
+        parents = [x_node, w_node]
+        args = [x_node.value, w_node.value]
+
+        if b_val is not None:
+            b_node = Node(b_val.copy())
+            parents.append(b_node)
+            args.append(b_node.value)
+        else:
+            b_node = None
+        # run the forward:
+        output_from_forward = op.forward(*args)
+
+        # generate random loss if necessary
+        if grad_val is None:
+            grad_val = self.default_rng.random(
+                output_from_forward.shape).astype(np.float32)
+
+        # dummy output node:
+        dummy_output = Node(output_from_forward, parents=parents, op=op)
+        grads = op.backward(grad_val, dummy_output)
+
+        # def function for analytical gradient calc:
+        def get_loss_as_node() -> Node:
+            current_args = [p.value for p in parents]
+            out_val = op.forward(*current_args)
+            loss_val = (out_val * grad_val).sum()
+            return Node(np.array([loss_val]))
+
+        dx_numerical = numerical_gradient(get_loss_as_node, x_node)
+        self.assertTrue(np.allclose(grads[0], dx_numerical, atol=EPSILON))
+
+        dw_numerical = numerical_gradient(get_loss_as_node, w_node)
+        self.assertTrue(np.allclose(grads[1], dw_numerical, atol=EPSILON))
+
+        if b_val is not None:
+            db_numerical = numerical_gradient(get_loss_as_node, b_node)
+            self.assertTrue(np.allclose(grads[2], db_numerical, atol=EPSILON))
+
+    def test_conv2d_op_backward_no_bias(self):
+        op = Conv2d(stride=1, padding=0)
+        x_val = self.default_rng.random((1, 1, 3, 3)).astype(np.float32)
+        w_val = self.default_rng.random((1, 1, 2, 2)).astype(np.float32)
+        self._check_conv_op_backward(op, x_val, w_val)
+
+    def test_conv2d_op_backward_with_bias(self):
+        op = Conv2d(stride=1, padding=0)
+        x_val = self.default_rng.random((1, 1, 3, 3)).astype(np.float32)
+        w_val = self.default_rng.random((1, 1, 2, 2)).astype(np.float32)
+        b_val = self.default_rng.random((1)).astype(np.float32)
+        self._check_conv_op_backward(op, x_val, w_val, b_val)
