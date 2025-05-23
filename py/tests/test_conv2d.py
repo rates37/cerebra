@@ -21,7 +21,7 @@ def numerical_gradient(func: Callable[[None], Node], node: Node, h=1e-6) -> np.n
                         shape as `node.value`.
     """
     input_value = node.value.copy()
-    grad = np.zeros_like(input_value, dtype=np.float32)
+    grad = np.zeros_like(input_value, dtype=np.float64)
 
     for i in np.ndindex(input_value.shape):
         val = input_value[i]

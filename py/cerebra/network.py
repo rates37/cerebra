@@ -110,8 +110,28 @@ def convert_to_col(x: np.ndarray, kernel_h: int, kernel_w: int, stride: int, pad
     return col, out_h, out_w
 
 
-def convert_from_col(cols: np.ndarray, x_shape: Tuple[int, int, int, int], kernel_h: int, kernel_w: int) -> np.ndarray:
-    pass
+def convert_from_col(cols: np.ndarray, x_shape: Tuple[int, int, int, int], kernel_h: int, 
+                     kernel_w: int, stride: int, padding: int) -> np.ndarray:
+    # convert the tensor from the expanded column tensor back to original shape
+    # x_shape = (N, C, H, W)
+    N,C,H,W = x_shape
+    h_padded = H + 2*padding
+    w_padded = W + 2*padding
+    h_out = (h_padded - kernel_h) // stride + 1
+    w_out = (w_padded - kernel_w) // stride + 1
+
+    cols_reshaped = cols.reshape(N, C, kernel_h, kernel_w, h_out, w_out)
+    x_pad = np.zeros((N, C, h_padded, w_padded), dtype=cols.dtype)
+
+    for y in range(kernel_h):
+        max_y = y + stride*h_out
+        for xi in range(kernel_w):
+            max_x = xi + stride*w_out
+            x_pad[:, :, y:max_y:stride, xi:max_x:stride] += cols_reshaped[:, :, y, xi, :, :]
+    if padding == 0:
+        return x_pad
+    return x_pad[:, :, padding:-padding, padding:-padding]
+
 
 class Conv2d(Operation):
     def __init__(self, stride: int = 1, padding: int = 0) -> None:
@@ -145,8 +165,33 @@ class Conv2d(Operation):
         output = output.reshape(N, C_out, out_h, out_w)
         return output
 
-    def backward(self, grad_output: np.ndarray, node: Node) -> List[np.ndarray]:
-        pass
+    def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
+        N, C_out, _, _ = output_grad.shape
+        output_grad_reshaped = output_grad.reshape(N, C_out, -1)
+        
+        # grad of W
+        weight_grad = np.zeros((C_out, self.col.shape[1]), dtype=output_grad.dtype)
+        for i in range(N):
+            weight_grad += output_grad_reshaped[i] @ self.col[i].T
+        # convert back to shape of regular W:
+        weight_grad = weight_grad.reshape(node.parents[1].value.shape)
+
+        # compute bias grad if it exists:
+        bias_grad = None
+        if len(node.parents) == 3:
+            bias_grad = output_grad.sum(axis=(0,2,3))
+        
+        # calculate input gradient:
+        weight = node.parents[1].value
+        weight_col = weight.reshape(C_out, -1)
+        grad_col = np.empty_like(self.col) # empty faster than zeroslike since doesn't initialise values
+        for i in range(N):
+            grad_col[i] = weight_col.T @ output_grad_reshaped[i]
+        x_grad = convert_from_col(grad_col, self.x_shape, self.kernel_h, self.kernel_w, self.stride, self.padding)
+        if bias_grad:
+            return [x_grad, weight_grad, bias_grad]
+        else:
+            return [x_grad, weight_grad]
 
 
 class Conv2dLayer(Module):
