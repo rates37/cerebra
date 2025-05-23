@@ -181,13 +181,13 @@ class TestConv2d(unittest.TestCase):
 
     def test_conv2d_op_backward_no_bias(self):
         op = Conv2d(stride=1, padding=0)
-        x_val = self.default_rng.random((1, 1, 3, 3)).astype(np.float32)
-        w_val = self.default_rng.random((1, 1, 2, 2)).astype(np.float32)
-        self._check_conv_op_backward(op, x_val, w_val)
+        x_val = self.default_rng.random((1, 1, 3, 3)).astype(np.float64)
+        w_val = self.default_rng.random((1, 1, 2, 2)).astype(np.float64)
+        self._check_conv_op_backward(op, x_val, w_val, b_val=None)
 
     def test_conv2d_op_backward_with_bias(self):
         op = Conv2d(stride=1, padding=0)
-        x_val = self.default_rng.random((1, 1, 3, 3)).astype(np.float32)
-        w_val = self.default_rng.random((1, 1, 2, 2)).astype(np.float32)
-        b_val = self.default_rng.random((1)).astype(np.float32)
+        x_val = self.default_rng.random((1, 1, 3, 3)).astype(np.float64)
+        w_val = self.default_rng.random((1, 1, 2, 2)).astype(np.float64)
+        b_val = self.default_rng.random((1)).astype(np.float64)
         self._check_conv_op_backward(op, x_val, w_val, b_val)
