@@ -170,14 +170,14 @@ class TestConv2d(unittest.TestCase):
             return Node(np.array([loss_val]))
 
         dx_numerical = numerical_gradient(get_loss_as_node, x_node)
-        self.assertTrue(np.allclose(grads[0], dx_numerical, atol=EPSILON))
+        self.assertTrue(np.allclose(grads[0], dx_numerical, atol=EPSILON, rtol=EPSILON))
 
         dw_numerical = numerical_gradient(get_loss_as_node, w_node)
-        self.assertTrue(np.allclose(grads[1], dw_numerical, atol=EPSILON))
+        self.assertTrue(np.allclose(grads[1], dw_numerical, atol=EPSILON, rtol=EPSILON))
 
         if b_val is not None:
             db_numerical = numerical_gradient(get_loss_as_node, b_node)
-            self.assertTrue(np.allclose(grads[2], db_numerical, atol=EPSILON))
+            self.assertTrue(np.allclose(grads[2], db_numerical, atol=EPSILON, rtol=EPSILON))
 
     def test_conv2d_op_backward_no_bias(self):
         op = Conv2d(stride=1, padding=0)
