@@ -191,3 +191,18 @@ class TestConv2d(unittest.TestCase):
         w_val = self.default_rng.random((1, 1, 2, 2)).astype(np.float64)
         b_val = self.default_rng.random((1)).astype(np.float64)
         self._check_conv_op_backward(op, x_val, w_val, b_val)
+
+    def test_conv2d_op_backward_padding_stride_bias_multichannel(self) -> None:
+        N = 2 # batch size
+        C_in = 3
+        H = W = 5
+        C_out = 4
+        kh = kw = 3
+        stride = 2
+        padding = 1
+
+        op = Conv2d(stride=stride, padding=padding)
+        x_val = self.default_rng.random((N, C_in, H, W)).astype(np.float64)
+        w_val = self.default_rng.random((C_out, C_in, kh, kw)).astype(np.float64)
+        b_val = self.default_rng.random((C_out,)).astype(np.float64)
+        self._check_conv_op_backward(op, x_val, w_val, b_val)

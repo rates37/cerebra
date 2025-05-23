@@ -188,7 +188,7 @@ class Conv2d(Operation):
         for i in range(N):
             grad_col[i] = weight_col.T @ output_grad_reshaped[i]
         x_grad = convert_from_col(grad_col, self.x_shape, self.kernel_h, self.kernel_w, self.stride, self.padding)
-        if bias_grad:
+        if bias_grad is not None:
             return [x_grad, weight_grad, bias_grad]
         else:
             return [x_grad, weight_grad]
