@@ -34,7 +34,7 @@ def numerical_gradient(func: Callable[[None], Node], node: Node, h=1e-6) -> np.n
 
         # calculate f(x-h):
         x_minus_h = input_value.copy()
-        x_minus_h[i] = val + h
+        x_minus_h[i] = val - h
         node.value = x_minus_h
         f_x_minus_h = func().value.item()
 
