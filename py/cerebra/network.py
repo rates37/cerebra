@@ -203,7 +203,29 @@ class Conv2dLayer(Module):
                  padding: int = 0,
                  bias: bool = True
                  ) -> None:
-        pass
+        super().__init__()
+        if isinstance(kernel_size, int):
+            kernel_size = (kernel_size, kernel_size)
+        self.stride = stride
+        self.padding = padding
+        self.weight = Parameter(
+            np.random.randn(out_channels, in_channels, kernel_size[0], kernel_size[1]) * 
+            np.sqrt(2 / (in_channels * kernel_size[0] * kernel_size[1])),
+                    name="conv2d_weight"
+        )
+        if bias:
+            self.bias = Parameter(np.zeros(out_channels), name="conv2d_bias")
+        else:
+            self.bias = None
 
     def forward(self, x: Node) -> Node:
-        pass
+        weight = to_node(self.weight)
+        op = Conv2d(self.stride, self.padding)
+
+        if self.bias is not None:
+            bias = to_node(self.bias)
+            output = op.forward(x.value, weight.value, bias.value)
+            return Node(output, parents=[x, weight, bias], op=op)
+        else:
+            output = op.forward(x.value, weight.value)
+            return Node(output, parents=[x, weight], op=op)
