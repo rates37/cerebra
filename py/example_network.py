@@ -25,16 +25,16 @@ class MLP(Module):
 # function to download MNIST and downsample it:
 def load_and_downsample_mnist(num_samples: int = 1000, downsample_factor: int = 2) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Loads MNIST using keras and downsamples each image by the provided factor.
-    Images are flattened and normalised
+    Loads MNIST and downsamples each image by the provided factor.
+    Images are flattened and normalised.
     """
-    # download data:
-    from tensorflow.keras.datasets import mnist
-    (x_train, y_train), (x_test, y_test) = mnist.load_data()
-
-    # combine train and test sets:
-    X = np.concatenate([x_train, x_test], axis=0)
-    y = np.concatenate([y_train, y_test], axis=0)
+    from sklearn.datasets import fetch_openml
+    
+    mnist = fetch_openml('mnist_784', version=1)
+    
+    # convert to np array
+    X = mnist.data.to_numpy().reshape(-1, 28, 28)
+    y = mnist.target.to_numpy().astype(np.int32)
 
     # shuffle data:
     indices = np.arange(X.shape[0])
@@ -106,12 +106,10 @@ if __name__ == "__main__":
             # compute accuracy:
             exp_logits = np.exp(
                 logits.value - np.max(logits.value, axis=1, keepdims=True))
-            probabilities = exp_logits / \
-                (np.sum(exp_logits, axis=1, keepdims=True))
+            probabilities = exp_logits / (np.sum(exp_logits, axis=1, keepdims=True))
             preds = np.argmax(probabilities, axis=1)
             correct_preds += np.sum(preds == y_batch)
             total_preds += y_batch.shape[0]
         loss_avg = epoch_loss / num_batches
         accuracy = (correct_preds / total_preds) * 100
-        print(
-            f"Epoch: {epoch}: Loss: {loss_avg:.4f}, Accuracy = {accuracy:.2f}%")
+        print(f"Epoch: {epoch}: Loss: {loss_avg:.4f}, Accuracy = {accuracy:.2f}%")

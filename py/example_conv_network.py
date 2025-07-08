@@ -28,16 +28,16 @@ class CNN(Module):
 # function to download MNIST and downsample it:
 def load_and_downsample_mnist(num_samples: int = 1000, downsample_factor: int = 2) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Loads MNIST using keras and downsamples each image by the provided factor.
-    Images are flattened and normalised
+    Loads MNIST and downsamples each image by the provided factor.
+    Images are flattened and normalised.
     """
-    # download data:
-    from tensorflow.keras.datasets import mnist
-    (x_train, y_train), (x_test, y_test) = mnist.load_data()
+    from sklearn.datasets import fetch_openml
 
-    # combine train and test sets:
-    X = np.concatenate([x_train, x_test], axis=0)
-    y = np.concatenate([y_train, y_test], axis=0)
+    mnist = fetch_openml('mnist_784', version=1)
+    
+    # convert to np array
+    X = mnist.data.to_numpy().reshape(-1, 28, 28)
+    y = mnist.target.to_numpy().astype(np.int32)
 
     # shuffle data:
     indices = np.arange(X.shape[0])
