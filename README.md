@@ -72,7 +72,7 @@ When `loss.backward()` is invoked, the following occurs:
 
 ### Neural Network API
 
-<!-- todo: -->
+Coming soon...
 
 ## Requirements
 * Python >= 3.12
