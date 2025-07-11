@@ -4,21 +4,24 @@ from cerebra.graph import Node, relu, reshape
 from cerebra.optim import SGD
 from typing import Tuple
 
+
 class CNN(Module):
-    def __init__(self, image_size: int=14) -> None:
+    def __init__(self, image_size: int = 14) -> None:
         super().__init__()
         # create layers:
-        self.c1 = Conv2dLayer(in_channels=1, out_channels=8, kernel_size=3, stride=1, padding=1, bias=True)
-        self.c2 = Conv2dLayer(in_channels=8, out_channels=16, kernel_size=3, stride=1, padding=1, bias=True)
+        self.c1 = Conv2dLayer(in_channels=1, out_channels=8,
+                              kernel_size=3, stride=1, padding=1, bias=True)
+        self.c2 = Conv2dLayer(in_channels=8, out_channels=16,
+                              kernel_size=3, stride=1, padding=1, bias=True)
         self.fc = Linear(16 * image_size * image_size, 10)
-    
+
     def forward(self, x: Node) -> Node:
         # reshape input tensors from 196x1 to 14x14 tensors:
         N = x.value.shape[0]
         x = reshape(x, (N, 1, 14, 14))
         x = relu(self.c1(x))
         x = relu(self.c2(x))
-        N,C,H,W = x.value.shape
+        N, C, H, W = x.value.shape
         # flatten conv2d feature maps:
         x = reshape(x, (N, C*H*W))
         # apply classifier / dense layer:
@@ -34,7 +37,7 @@ def load_and_downsample_mnist(num_samples: int = 1000, downsample_factor: int = 
     from sklearn.datasets import fetch_openml
 
     mnist = fetch_openml('mnist_784', version=1)
-    
+
     # convert to np array
     X = mnist.data.to_numpy().reshape(-1, 28, 28)
     y = mnist.target.to_numpy().astype(np.int32)
@@ -62,7 +65,6 @@ if __name__ == "__main__":
     downsample_factor = 2
 
     input_dimension = (28 // downsample_factor) ** 2
-
 
     # load mnist:
     X, y = load_and_downsample_mnist(

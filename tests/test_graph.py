@@ -68,7 +68,8 @@ class TestNode(unittest.TestCase):
         a = Node(np.array([1, 2, 3]))
         b = Node(np.array([4, 5, 6]))
         c = a * b
-        self.assertTrue(np.allclose(c.value, np.array([4, 10, 18]), atol=EPSILON))
+        self.assertTrue(np.allclose(
+            c.value, np.array([4, 10, 18]), atol=EPSILON))
 
         # Test 3: Matrix dot multiplication
         a = Node(np.array([[1, 2, 3], [4, 5, 6]]))
@@ -87,36 +88,39 @@ class TestNode(unittest.TestCase):
                            [0.32085063, 0.4999047],
                            [0.38680514, 0.14657554]]))
         c = a * b
-        self.assertTrue(np.allclose(c.value, np.array([[0.09039278, 0.74546161], 
-                                                       [0.48027947, 0.36212771], 
-                                                       [0.00137366, 0.35723062], 
+        self.assertTrue(np.allclose(c.value, np.array([[0.09039278, 0.74546161],
+                                                       [0.48027947, 0.36212771],
+                                                       [0.00137366, 0.35723062],
                                                        [0.09179062, 0.08653041]]), atol=EPSILON))
-        
+
         # Test 5: Vector * Scalar (broadcasting)
         a = Node(np.array([1.0, 2.0]))
         b_val = 3.0
         c = a * b_val
-        self.assertTrue(np.allclose(c.value, np.array([3.0, 6.0]), atol=EPSILON))
+        self.assertTrue(np.allclose(
+            c.value, np.array([3.0, 6.0]), atol=EPSILON))
 
         # Test 6: Scalar * Vector (broadcasting)
         a_val = 4.0
         b = Node(np.array([3, 6]))
         c = a_val * b
-        self.assertTrue(np.allclose(c.value, np.array([12.0, 24.0]), atol=EPSILON))
-
+        self.assertTrue(np.allclose(
+            c.value, np.array([12.0, 24.0]), atol=EPSILON))
 
     def test_node_subtraction(self) -> None:
         # Test 1: Vector - vector
-        a = Node(np.array([10,20,30]))
-        b = Node(np.array([1,2,3]))
+        a = Node(np.array([10, 20, 30]))
+        b = Node(np.array([1, 2, 3]))
         c = a - b
-        self.assertTrue(np.allclose(c.value, np.array([9,18,27]), atol=EPSILON))
+        self.assertTrue(np.allclose(
+            c.value, np.array([9, 18, 27]), atol=EPSILON))
 
         # Test 2: Vector - scalar
         a = Node(np.array([10.0, 20.0]))
         b_val = 3.0
         c = a - b_val
-        self.assertTrue(np.allclose(c.value, np.array([7.0, 17.0]), atol=EPSILON))
+        self.assertTrue(np.allclose(
+            c.value, np.array([7.0, 17.0]), atol=EPSILON))
 
         # Test 3: Scalar - vector
         a_val = 100.0
@@ -128,13 +132,13 @@ class TestNode(unittest.TestCase):
         a = Node(np.array([1, 2, 3]))
         b = Node(np.array([4, 5, 6]))
         c = a - b
-        self.assertTrue(np.allclose(c.value, np.array([-3, -3, -3]), atol=EPSILON))
-
+        self.assertTrue(np.allclose(
+            c.value, np.array([-3, -3, -3]), atol=EPSILON))
 
     def test_node_matrix_multiplication(self) -> None:
         # Test 1: Node @ Node
-        a_val = self.default_rng.random((2,3))
-        b_val = self.default_rng.random((3,4))
+        a_val = self.default_rng.random((2, 3))
+        b_val = self.default_rng.random((3, 4))
         a = Node(a_val)
         b = Node(b_val)
         c = a @ b
@@ -150,23 +154,23 @@ class TestNode(unittest.TestCase):
         # e = a_val @ b
         # self.assertTrue(np.allclose(e.value, a_val @ b_val, atol=EPSILON))
 
-
     def test_node_negation(self) -> None:
-        a = Node(np.array([1,-2,0]))
+        a = Node(np.array([1, -2, 0]))
         b = -a
-        self.assertTrue(np.allclose(b.value, np.array([-1,2,0]), atol=EPSILON))
+        self.assertTrue(np.allclose(
+            b.value, np.array([-1, 2, 0]), atol=EPSILON))
         self.assertEqual(len(b.parents), 1)
 
     def test_top_sort(self) -> None:
         # Test 1: Complex layered graph
         a = Node(1, name="a")
         b = Node(2, name="b")
-        c = a + b; 
-        c.name = "c" # c = a+b
-        d = c * a; 
-        d.name = "d" # d = c*a
-        e = relu(d); 
-        e.name = "e" # e = relu(d) = relu(c*a) = relu((a+b)a)
+        c = a + b
+        c.name = "c"  # c = a+b
+        d = c * a
+        d.name = "d"  # d = c*a
+        e = relu(d)
+        e.name = "e"  # e = relu(d) = relu(c*a) = relu((a+b)a)
 
         order = e.top_sort_ancestors()
 
@@ -186,7 +190,7 @@ class TestNode(unittest.TestCase):
         self.assertLess(order.index(c), order.index(d))
         self.assertLess(order.index(a), order.index(d))
         self.assertLess(order.index(d), order.index(e))
-        self.assertIs(order[-1], e) # The node itself should be last
+        self.assertIs(order[-1], e)  # The node itself should be last
 
         # Test 2: Test with a single node
         f = Node(10, name="f")
@@ -196,8 +200,8 @@ class TestNode(unittest.TestCase):
 
     def test_backward_simple_add(self) -> None:
         # Test 1: vector + vector
-        a = Node(np.array([1,2]))
-        b = Node(np.array([3,4]))
+        a = Node(np.array([1, 2]))
+        b = Node(np.array([3, 4]))
         c = a + b
         c.backward()
 
@@ -207,16 +211,16 @@ class TestNode(unittest.TestCase):
         self.assertIsNotNone(c.grad)
 
         # check gradients are correct:
-        self.assertTrue(np.allclose(c.grad, np.array([1,1]), atol=EPSILON))
-        self.assertTrue(np.allclose(a.grad, np.array([1,1]), atol=EPSILON))
-        self.assertTrue(np.allclose(b.grad, np.array([1,1]), atol=EPSILON))
+        self.assertTrue(np.allclose(c.grad, np.array([1, 1]), atol=EPSILON))
+        self.assertTrue(np.allclose(a.grad, np.array([1, 1]), atol=EPSILON))
+        self.assertTrue(np.allclose(b.grad, np.array([1, 1]), atol=EPSILON))
 
         # todo: add more tests
-    
+
     def test_backward_simple_mul(self) -> None:
         # Test 1: vector + vector
-        a = Node(np.array([1,2]))
-        b = Node(np.array([3,4]))
+        a = Node(np.array([1, 2]))
+        b = Node(np.array([3, 4]))
         c = a * b
         c.backward()
 
@@ -226,9 +230,12 @@ class TestNode(unittest.TestCase):
         self.assertIsNotNone(c.grad)
 
         # check gradients are correct:
-        self.assertTrue(np.allclose(c.grad, np.array([1,1]), atol=EPSILON))  # dL/dc = 1
-        self.assertTrue(np.allclose(a.grad, b.value, atol=EPSILON))  # dL/da = dL/dc * dc/da = 1 * d/da(a*b) = b
-        self.assertTrue(np.allclose(b.grad, a.value, atol=EPSILON))  # dL/db = dL/dc * dc/db = 1 * d/db(a*b) = a
+        self.assertTrue(np.allclose(c.grad, np.array(
+            [1, 1]), atol=EPSILON))  # dL/dc = 1
+        # dL/da = dL/dc * dc/da = 1 * d/da(a*b) = b
+        self.assertTrue(np.allclose(a.grad, b.value, atol=EPSILON))
+        # dL/db = dL/dc * dc/db = 1 * d/db(a*b) = a
+        self.assertTrue(np.allclose(b.grad, a.value, atol=EPSILON))
 
         # todo: add more tests
 
@@ -241,7 +248,7 @@ class TestNode(unittest.TestCase):
         a = x * y  # a = x*y = 6
         a.name = "a"
         f = a + z  # f = a+z = 10
-        f.name = "f"  
+        f.name = "f"
 
         f.backward()  # dL/df = 1
 
@@ -259,7 +266,7 @@ class TestNode(unittest.TestCase):
 
     def test_backward_broadcasting(self) -> None:
         x_val = np.array([[1., 2.], [3., 4.]])
-        y_val = np.array([[10., 20.]]) # Will broadcast to [[10,20],[10,20]]
+        y_val = np.array([[10., 20.]])  # Will broadcast to [[10,20],[10,20]]
         x = Node(x_val)
         y = Node(y_val)
 
@@ -268,13 +275,14 @@ class TestNode(unittest.TestCase):
         z_addition.backward()
 
         # dL/dx = dL / dz * dz/dx = [[1,1], [1,1]]
-        self.assertTrue(np.allclose(x.grad, np.array([[1,1],[1,1]]), atol=EPSILON))
+        self.assertTrue(np.allclose(
+            x.grad, np.array([[1, 1], [1, 1]]), atol=EPSILON))
         # dL/dy = dL / dz * dz/dy, summed along axis 0 = [[2,2], [2,2]]
-        self.assertTrue(np.allclose(y.grad, np.array([[2,2]]), atol=EPSILON))
+        self.assertTrue(np.allclose(y.grad, np.array([[2, 2]]), atol=EPSILON))
 
         # Reset values for next test:
         x_val = np.array([[1., 2.], [3., 4.]])
-        y_val = np.array([[10., 20.]]) # Will broadcast to [[10,20],[10,20]]
+        y_val = np.array([[10., 20.]])  # Will broadcast to [[10,20],[10,20]]
         x = Node(x_val)
         y = Node(y_val)
 
@@ -283,7 +291,9 @@ class TestNode(unittest.TestCase):
         z_multiplication.backward()
 
         # dL / dx = dL / dz * dz/dx = dL/dz * y broadcasted
-        self.assertTrue(np.allclose(x.grad, np.array([y_val,y_val]), atol=EPSILON))
+        self.assertTrue(np.allclose(
+            x.grad, np.array([y_val, y_val]), atol=EPSILON))
 
         # dL / dy = dL / dz * dz/dy = dL/dz * x summed along axis 0
-        self.assertTrue(np.allclose(y.grad, np.sum(x_val, axis=0), atol=EPSILON))
+        self.assertTrue(np.allclose(
+            y.grad, np.sum(x_val, axis=0), atol=EPSILON))
