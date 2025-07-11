@@ -28,7 +28,7 @@ This represents a tensor in the graph, holding:
 * `parents`: Upstream nodes that the output value of this node relies on
 * `op`: The operation that created this Node.
 
-#### `Value` class:
+#### `Variable` class:
 
 A leaf node (has no `parents` and no `op`). Typically used to represent inputs or trainable parameters.
 
