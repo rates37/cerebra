@@ -170,14 +170,17 @@ class TestConv2d(unittest.TestCase):
             return Node(np.array([loss_val]))
 
         dx_numerical = numerical_gradient(get_loss_as_node, x_node)
-        self.assertTrue(np.allclose(grads[0], dx_numerical, atol=EPSILON, rtol=EPSILON))
+        self.assertTrue(np.allclose(
+            grads[0], dx_numerical, atol=EPSILON, rtol=EPSILON))
 
         dw_numerical = numerical_gradient(get_loss_as_node, w_node)
-        self.assertTrue(np.allclose(grads[1], dw_numerical, atol=EPSILON, rtol=EPSILON))
+        self.assertTrue(np.allclose(
+            grads[1], dw_numerical, atol=EPSILON, rtol=EPSILON))
 
         if b_val is not None:
             db_numerical = numerical_gradient(get_loss_as_node, b_node)
-            self.assertTrue(np.allclose(grads[2], db_numerical, atol=EPSILON, rtol=EPSILON))
+            self.assertTrue(np.allclose(
+                grads[2], db_numerical, atol=EPSILON, rtol=EPSILON))
 
     def test_conv2d_op_backward_no_bias(self):
         op = Conv2d(stride=1, padding=0)
@@ -193,7 +196,7 @@ class TestConv2d(unittest.TestCase):
         self._check_conv_op_backward(op, x_val, w_val, b_val)
 
     def test_conv2d_op_backward_padding_stride_bias_multichannel(self) -> None:
-        N = 2 # batch size
+        N = 2  # batch size
         C_in = 3
         H = W = 5
         C_out = 4
@@ -203,6 +206,7 @@ class TestConv2d(unittest.TestCase):
 
         op = Conv2d(stride=stride, padding=padding)
         x_val = self.default_rng.random((N, C_in, H, W)).astype(np.float64)
-        w_val = self.default_rng.random((C_out, C_in, kh, kw)).astype(np.float64)
+        w_val = self.default_rng.random(
+            (C_out, C_in, kh, kw)).astype(np.float64)
         b_val = self.default_rng.random((C_out,)).astype(np.float64)
         self._check_conv_op_backward(op, x_val, w_val, b_val)

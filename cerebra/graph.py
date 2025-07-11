@@ -220,9 +220,10 @@ class Reshape(Operation):
     def forward(self, x: np.ndarray) -> np.ndarray:
         self.original_shape = x.shape
         return x.reshape(self.shape)
-    
+
     def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
         return [output_grad.reshape(self.original_shape)]
+
 
 def reshape(x: Union[Node, np.ndarray], shape: Tuple[int, ...]) -> Node:
     x = to_node(x)
@@ -233,6 +234,8 @@ def reshape(x: Union[Node, np.ndarray], shape: Tuple[int, ...]) -> Node:
 #! =====================
 #!   Utility Functions
 #! =====================
+
+
 def to_node(x: Union[Node, np.ndarray, float, int]) -> Node:
     return x if isinstance(x, Node) else Node(x)
 

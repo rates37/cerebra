@@ -29,9 +29,9 @@ def load_and_downsample_mnist(num_samples: int = 1000, downsample_factor: int = 
     Images are flattened and normalised.
     """
     from sklearn.datasets import fetch_openml
-    
+
     mnist = fetch_openml('mnist_784', version=1)
-    
+
     # convert to np array
     X = mnist.data.to_numpy().reshape(-1, 28, 28)
     y = mnist.target.to_numpy().astype(np.int32)
@@ -106,10 +106,12 @@ if __name__ == "__main__":
             # compute accuracy:
             exp_logits = np.exp(
                 logits.value - np.max(logits.value, axis=1, keepdims=True))
-            probabilities = exp_logits / (np.sum(exp_logits, axis=1, keepdims=True))
+            probabilities = exp_logits / \
+                (np.sum(exp_logits, axis=1, keepdims=True))
             preds = np.argmax(probabilities, axis=1)
             correct_preds += np.sum(preds == y_batch)
             total_preds += y_batch.shape[0]
         loss_avg = epoch_loss / num_batches
         accuracy = (correct_preds / total_preds) * 100
-        print(f"Epoch: {epoch}: Loss: {loss_avg:.4f}, Accuracy = {accuracy:.2f}%")
+        print(
+            f"Epoch: {epoch}: Loss: {loss_avg:.4f}, Accuracy = {accuracy:.2f}%")
