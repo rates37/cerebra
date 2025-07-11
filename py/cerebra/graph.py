@@ -211,6 +211,25 @@ def relu(x: Union[Node, np.ndarray, float, int]) -> Node:
     return Node(val, parents=[x], op=op)
 
 
+# reshape operation:
+class Reshape(Operation):
+    def __init__(self, shape: Tuple[int, ...]) -> None:
+        self.shape = shape
+        self.original_shape: Optional[Tuple[int, ...]] = None
+
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        self.original_shape = x.shape
+        return x.reshape(self.shape)
+    
+    def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
+        return [output_grad.reshape(self.original_shape)]
+
+def reshape(x: Union[Node, np.ndarray], shape: Tuple[int, ...]) -> Node:
+    x = to_node(x)
+    op = Reshape(shape)
+    new_val = op.forward(x.value)
+    return Node(new_val, parents=[x], op=op)
+
 #! =====================
 #!   Utility Functions
 #! =====================

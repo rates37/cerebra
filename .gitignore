@@ -182,3 +182,4 @@ cython_debug/
 # ds store
 **.DS_Store*
 /.vscode
+*temp**
