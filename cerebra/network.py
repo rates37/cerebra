@@ -241,22 +241,46 @@ class Conv2dLayer(Module):
 # 2D Pooling layer Operations/Functions:
 
 class MaxPool2DOp(Operation):
-    def __init__(self, kernel_size: int, stride: Optional[int] = None, padding: int = 0) -> None:
-        pass
+    def __init__(self, kernel_size: Tuple[int, int], stride: Optional[int] = None, padding: int = 0) -> None:
+        self.kh, self.kw = kernel_size
+        self.stride = stride
+        self.padding = padding
+
+        self.col: np.ndarray = np.array([])
+        self.x_shape: Tuple[int, int, int, int] = ()
+        self.out_h = self.out_w = 0
+        self.maxIdx: np.ndarray = np.array([])
 
     def forward(self, x: np.ndarray) -> np.ndarray:
-        pass
+        self.x_shape = N, C, H, W = x.shape
+        self.cols, self.out_h, self.out_w = convert_to_col(
+            x, self.kh, self.kw, self.stride, self.padding)
+        # self.cols.shape is (N, C * kh * kw, oh*pw)
+        # reshape to (N, C, kh*kw, oh*pw):
+        cols_reshaped = self.cols.reshape(
+            N, C, self.kh*self.kw, self.out_h*self.out_w)
+        maxVals = cols_reshaped.max(axis=2)  # (N,C,oh*pw)
+        # for backprop, contains indices [0 .. kh*kw-1]
+        self.maxIdx = cols_reshaped.argmax(axis=2)
+        return maxVals.reshape(N, C, self.out_h, self.out_w)
 
     def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
-        pass
+        N, C, _, _ = output_grad.shape
+        L = self.out_h*self.out_w
 
+        # reshape gradient to (N,C,L):
+        flattened_gradient = output_grad.reshape(N, C, L)
 
-def max_pool_2d(x: Union[Node, np.ndarray],
-                kernel_size: Union[int, Tuple[int, int]],
-                stride: Optional[int] = None,
-                padding: int = 0
-                ) -> Node:
-    pass
+        # create masK:
+        mask = np.zeros((N, C, self.kw*self.kh, L), dtype=output_grad.dtype)
+        for i in range(N):
+            for j in range(C):
+                mask[i, j, self.maxIdx[i, j, :], np.arange(L)] = 1
+        grad_col = mask * flattened_gradient[:, :, None, :]
+        grad_col = grad_col.reshape(N, C*self.kh*self.kw, L)
+        x_grad = convert_from_col(
+            grad_col, self.x_shape, self.kh, self.kw, self.stride, self.padding)
+        return [x_grad]
 
 
 class AvgPool2DOp(Operation):
@@ -285,10 +309,17 @@ class MaxPool2D(Module):
                  stride: Optional[int] = None,
                  padding: int = 0
                  ):
-        pass
+        if isinstance(kernel_size, int):
+            self.kernel_size = (kernel_size, kernel_size)
+        else:
+            self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
 
     def forward(self, x: Node) -> Node:
-        pass
+        op = MaxPool2DOp(self.kernel_size, self.stride, self.padding)
+        out = op.forward(x.value)
+        return Node(out, parents=[x], op=op)
 
 
 class AvgPool2D(Module):
