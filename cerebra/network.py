@@ -241,7 +241,7 @@ class Conv2dLayer(Module):
 # 2D Pooling layer Operations/Functions:
 
 class MaxPool2DOp(Operation):
-    def __init__(self, kernel_size: Tuple[int, int], stride: Optional[int] = None, padding: int = 0) -> None:
+    def __init__(self, kernel_size: Tuple[int, int], stride: int = 1, padding: int = 0) -> None:
         self.kh, self.kw = kernel_size
         self.stride = stride
         self.padding = padding
@@ -296,7 +296,7 @@ class AvgPool2DOp(Operation):
 
 def avg_pool_2d(x: Union[Node, np.ndarray],
                 kernel_size: Union[int, Tuple[int, int]],
-                stride: Optional[int] = None,
+                stride: int = 1,
                 padding: int = 0
                 ) -> Node:
     pass
@@ -306,7 +306,7 @@ def avg_pool_2d(x: Union[Node, np.ndarray],
 class MaxPool2D(Module):
     def __init__(self,
                  kernel_size: Union[int, Tuple[int, int]],
-                 stride: Optional[int] = None,
+                 stride: int = 1,
                  padding: int = 0
                  ):
         if isinstance(kernel_size, int):
@@ -325,7 +325,7 @@ class MaxPool2D(Module):
 class AvgPool2D(Module):
     def __init__(self,
                  kernel_size: Union[int, Tuple[int, int]],
-                 stride: Optional[int] = None,
+                 stride: int = 1,
                  padding: int = 0
                  ):
         pass
