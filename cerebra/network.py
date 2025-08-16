@@ -236,3 +236,68 @@ class Conv2dLayer(Module):
         else:
             output = op.forward(x.value, weight.value)
             return Node(output, parents=[x, weight], op=op)
+
+
+# 2D Pooling layer Operations/Functions:
+
+class MaxPool2DOp(Operation):
+    def __init__(self, kernel_size: int, stride: Optional[int] = None, padding: int = 0) -> None:
+        pass
+
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        pass
+
+    def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
+        pass
+
+
+def max_pool_2d(x: Union[Node, np.ndarray],
+                kernel_size: Union[int, Tuple[int, int]],
+                stride: Optional[int] = None,
+                padding: int = 0
+                ) -> Node:
+    pass
+
+
+class AvgPool2DOp(Operation):
+    def __init__(self) -> None:
+        pass
+
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        pass
+
+    def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
+        pass
+
+
+def avg_pool_2d(x: Union[Node, np.ndarray],
+                kernel_size: Union[int, Tuple[int, int]],
+                stride: Optional[int] = None,
+                padding: int = 0
+                ) -> Node:
+    pass
+
+
+# 2D Pooling Modules:
+class MaxPool2D(Module):
+    def __init__(self,
+                 kernel_size: Union[int, Tuple[int, int]],
+                 stride: Optional[int] = None,
+                 padding: int = 0
+                 ):
+        pass
+
+    def forward(self, x: Node) -> Node:
+        pass
+
+
+class AvgPool2D(Module):
+    def __init__(self,
+                 kernel_size: Union[int, Tuple[int, int]],
+                 stride: Optional[int] = None,
+                 padding: int = 0
+                 ):
+        pass
+
+    def forward(self, x: Node) -> Node:
+        pass
