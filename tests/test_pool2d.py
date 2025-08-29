@@ -274,3 +274,26 @@ class TestAvgPool2d(unittest.TestCase):
                ]]], dtype=np.float32)
 
         self.assertTrue(np.allclose(out.value, expected_out, atol=EPSILON))
+
+    def test_avgpool2d_op_forward_stride_and_padding(self):
+        x_val = np.arange(1, 10, dtype=np.float32).reshape(1, 1, 3, 3)
+        pool = AvgPool2DOp(kernel_size=(2, 2), stride=2, padding=1)
+        out = pool.forward(x_val)
+        expected_out = np.array(
+            [[[[0.25, 1.25],
+               [2.75, 7.0],
+               ]]], dtype=np.float32)
+
+        self.assertTrue(np.allclose(out, expected_out, atol=EPSILON))
+
+    def test_avgpool2d_forward_stride_and_padding(self):
+        x_val = np.arange(1, 10, dtype=np.float32).reshape(1, 1, 3, 3)
+        x = Node(x_val)
+        pool = AvgPool2D(kernel_size=2, stride=2, padding=1)
+        out = pool(x)
+        expected_out = np.array(
+            [[[[0.25, 1.25],
+               [2.75, 7.0],
+               ]]], dtype=np.float32)
+
+        self.assertTrue(np.allclose(out.value, expected_out, atol=EPSILON))
