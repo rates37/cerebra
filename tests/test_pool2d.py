@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from typing import Callable, Optional
-from cerebra import Node, MaxPool2DOp, MaxPool2D
+from cerebra import Node, MaxPool2DOp, MaxPool2D, AvgPool2DOp, AvgPool2D
 
 EPSILON = 1e-6
 
@@ -46,7 +46,7 @@ def numerical_gradient(func: Callable[[None], Node], node: Node, h=1e-6) -> np.n
     return grad
 
 
-class TestPool2d(unittest.TestCase):
+class TestMaxPool2d(unittest.TestCase):
     def setUp(self) -> None:
         self.default_rng = np.random.default_rng(69)
 
@@ -195,3 +195,36 @@ class TestPool2d(unittest.TestCase):
         op = MaxPool2DOp(kernel_size=(kh, kw), stride=stride, padding=padding)
         x_val = self.default_rng.random((N, C, H, W)).astype(np.float64)
         self._check_maxpool_op_backward(op, x_val)
+
+
+class TestAvgPool2d(unittest.TestCase):
+    def setUp(self) -> None:
+        self.default_rng = np.random.default_rng(69)
+
+    def tearDown(self) -> None:
+        pass
+
+    def test_avgpool2d_op_forward(self):
+        x_val = np.arange(1, 17, dtype=np.float32).reshape(1, 1, 4, 4)
+        pool = AvgPool2DOp(kernel_size=(2, 2), stride=1)
+        out = pool.forward(x_val)
+        expected_out = np.array(
+            [[[[3.5, 4.5, 5.5],
+               [7.5, 8.5, 9.5],
+               [11.5, 12.5, 13.5]
+               ]]], dtype=np.float32)
+
+        self.assertTrue(np.allclose(out, expected_out, atol=EPSILON))
+
+    def test_avgpool2d_forward(self):
+        x_val = np.arange(1, 17, dtype=np.float32).reshape(1, 1, 4, 4)
+        x = Node(x_val)
+        pool = AvgPool2D(kernel_size=2, stride=1)
+        out = pool(x)
+        expected_out = np.array(
+            [[[[3.5, 4.5, 5.5],
+               [7.5, 8.5, 9.5],
+               [11.5, 12.5, 13.5]
+               ]]], dtype=np.float32)
+
+        self.assertTrue(np.allclose(out.value, expected_out, atol=EPSILON))
