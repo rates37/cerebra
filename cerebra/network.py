@@ -283,25 +283,43 @@ class MaxPool2DOp(Operation):
 
 
 class AvgPool2DOp(Operation):
-    def __init__(self) -> None:
-        pass
+    def __init__(self, kernel_size: Tuple[int, int], stride: int = 1, padding: int = 0) -> None:
+        self.kh, self.kw = kernel_size
+        self.stride = stride
+        self.padding = padding
+
+        self.x_shape: Tuple[int, int, int, int] = ()
+        self.out_h = self.out_w = 0
 
     def forward(self, x: np.ndarray) -> np.ndarray:
-        pass
+        self.x_shape = N, C, H, W = x.shape
+        cols, self.out_h, self.out_w = convert_to_col(
+            x, self.kh, self.kw, self.stride, self.padding)
+        cols_reshaped = cols.reshape(
+            N, C, self.kh*self.kw, self.out_h*self.out_w)
+
+        #
+        meanVals = cols_reshaped.mean(axis=2)
+        return meanVals.reshape(N, C, self.out_h, self.out_w)
 
     def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
-        pass
+        N, C, _, _ = output_grad.shape
+        L = self.out_h*self.out_w
 
+        # reshape gradient to (N,C,L):
+        flattened_gradient = output_grad.reshape(N, C, L)
 
-def avg_pool_2d(x: Union[Node, np.ndarray],
-                kernel_size: Union[int, Tuple[int, int]],
-                stride: int = 1,
-                padding: int = 0
-                ) -> Node:
-    pass
-
+        gradient_per_element = (flattened_gradient / (self.kh * self.kw))
+        gradient_cols = np.repeat(
+            gradient_per_element[:, :, None, :], self.kh * self.kw, axis=2)
+        # grad_cols is shape (N,C,kh*kw,L)
+        x_grad = convert_from_col(
+            gradient_cols, self.x_shape, self.kh, self.kw, self.stride, self.padding)
+        return [x_grad]
 
 # 2D Pooling Modules:
+
+
 class MaxPool2D(Module):
     def __init__(self,
                  kernel_size: Union[int, Tuple[int, int]],
@@ -327,7 +345,14 @@ class AvgPool2D(Module):
                  stride: int = 1,
                  padding: int = 0
                  ):
-        pass
+        if isinstance(kernel_size, int):
+            self.kernel_size = (kernel_size, kernel_size)
+        else:
+            self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
 
     def forward(self, x: Node) -> Node:
-        pass
+        op = AvgPool2DOp(self.kernel_size, self.stride, self.padding)
+        out = op.forward(x.value)
+        return Node(out, parents=[x], op=op)
