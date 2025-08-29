@@ -246,18 +246,17 @@ class MaxPool2DOp(Operation):
         self.stride = stride
         self.padding = padding
 
-        self.col: np.ndarray = np.array([])
         self.x_shape: Tuple[int, int, int, int] = ()
         self.out_h = self.out_w = 0
         self.maxIdx: np.ndarray = np.array([])
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self.x_shape = N, C, H, W = x.shape
-        self.cols, self.out_h, self.out_w = convert_to_col(
+        cols, self.out_h, self.out_w = convert_to_col(
             x, self.kh, self.kw, self.stride, self.padding)
-        # self.cols.shape is (N, C * kh * kw, oh*pw)
+        # cols.shape is (N, C * kh * kw, oh*pw)
         # reshape to (N, C, kh*kw, oh*pw):
-        cols_reshaped = self.cols.reshape(
+        cols_reshaped = cols.reshape(
             N, C, self.kh*self.kw, self.out_h*self.out_w)
         maxVals = cols_reshaped.max(axis=2)  # (N,C,oh*pw)
         # for backprop, contains indices [0 .. kh*kw-1]
