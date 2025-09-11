@@ -297,3 +297,54 @@ class TestAvgPool2d(unittest.TestCase):
                ]]], dtype=np.float32)
 
         self.assertTrue(np.allclose(out.value, expected_out, atol=EPSILON))
+
+    #! ==========================
+    #!    Backward Pool Tests
+    #! ==========================
+    def _check_avgpool_op_backward(
+        self,
+        op: MaxPool2DOp,
+        x_val: np.ndarray,
+        grad_val: Optional[np.ndarray] = None
+    ) -> None:
+        x_node = Node(x_val.copy())
+
+        # run forward pass
+        output_from_forward = op.forward(x_node.value)
+
+        # generate random loss if necessary
+        if grad_val is None:
+            grad_val = self.default_rng.random(
+                output_from_forward.shape).astype(np.float64)
+
+        # dummy output node for backward call
+        dummy_output = Node(output_from_forward, parents=[x_node], op=op)
+        grads = op.backward(grad_val, dummy_output)
+        dx_analytical = grads[0]
+
+        # define function for numerical gradient calculation
+        def get_loss_as_node() -> Node:
+            out_val = op.forward(x_node.value)
+            loss_val = (out_val * grad_val).sum()
+            return Node(np.array([loss_val]))
+
+        dx_numerical = numerical_gradient(get_loss_as_node, x_node)
+        self.assertTrue(np.allclose(
+            dx_analytical, dx_numerical, atol=EPSILON, rtol=EPSILON))
+
+    def test_avgpool2d_op_backward(self):
+        op = AvgPool2DOp(kernel_size=(2, 2), stride=1, padding=0)
+        x_val = self.default_rng.random((1, 1, 4, 4)).astype(np.float64)
+        self._check_avgpool_op_backward(op, x_val)
+    
+    def test_avgpool2d_op_backward_stride_padding_multichannel(self):
+        N = 2
+        C = 3
+        H = W = 5
+        kh = kw = 3
+        stride = 2
+        padding = 1
+
+        op = AvgPool2DOp(kernel_size=(kh, kw), stride=stride, padding=padding)
+        x_val = self.default_rng.random((N, C, H, W)).astype(np.float64)
+        self._check_avgpool_op_backward(op, x_val)
