@@ -336,7 +336,7 @@ class TestAvgPool2d(unittest.TestCase):
         op = AvgPool2DOp(kernel_size=(2, 2), stride=1, padding=0)
         x_val = self.default_rng.random((1, 1, 4, 4)).astype(np.float64)
         self._check_avgpool_op_backward(op, x_val)
-    
+
     def test_avgpool2d_op_backward_stride_padding_multichannel(self):
         N = 2
         C = 3
