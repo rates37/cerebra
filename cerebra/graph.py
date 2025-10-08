@@ -11,9 +11,16 @@ Array = npt.NDArray[np.float64]
 OptionalArray = Optional[Array]
 
 
+#! ===========
+#!   Config
+#! ===========
+_GRAD_ENABLED = True
+
 #! ===============
 #!   Basic Nodes
 #! ===============
+
+
 class Node:
     def __init__(
         self,
@@ -66,7 +73,10 @@ class Node:
         other = to_node(other)
         op = Add()
         new_val = op.forward(self.value, other.value)
-        return Node(new_val, parents=[self, other], op=op)
+        if is_grad_enabled():
+            return Node(new_val, parents=[self, other], op=op)
+        else:
+            return Node(new_val)
 
     def __radd__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
         return to_node(other).__add__(self)
@@ -75,7 +85,10 @@ class Node:
         other = to_node(other)
         op = Multiply()
         new_val = op.forward(self.value, other.value)
-        return Node(new_val, parents=[self, other], op=op)
+        if is_grad_enabled():
+            return Node(new_val, parents=[self, other], op=op)
+        else:
+            return Node(new_val)
 
     def __rmul__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
         return to_node(other).__mul__(self)
@@ -84,7 +97,10 @@ class Node:
         other = to_node(other)
         op = MatMul()
         new_val = op.forward(self.value, other.value)
-        return Node(new_val, parents=[self, other], op=op)
+        if is_grad_enabled():
+            return Node(new_val, parents=[self, other], op=op)
+        else:
+            return Node(new_val)
 
     def __rmatmul__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
         return to_node(other).__matmul__(self)
@@ -93,7 +109,10 @@ class Node:
         other = to_node(other)
         op = Sub()
         new_val = op.forward(self.value, other.value)
-        return Node(new_val, parents=[self, other], op=op)
+        if is_grad_enabled():
+            return Node(new_val, parents=[self, other], op=op)
+        else:
+            return Node(new_val)
 
     def __rsub__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
         return to_node(other).__sub__(self)
@@ -101,7 +120,10 @@ class Node:
     def __neg__(self) -> Node:
         op = Neg()
         new_val = op.forward(self.value)
-        return Node(new_val, parents=[self], op=op)
+        if is_grad_enabled():
+            return Node(new_val, parents=[self], op=op)
+        else:
+            return Node(new_val)
 
 
 class Variable(Node):
@@ -208,7 +230,10 @@ def relu(x: Union[Node, np.ndarray, float, int]) -> Node:
     x = to_node(x)
     op = ReLU()
     val = op.forward(x.value)
-    return Node(val, parents=[x], op=op)
+    if is_grad_enabled():
+        return Node(val, parents=[x], op=op)
+    else:
+        return Node(val)
 
 
 # reshape operation:
@@ -229,7 +254,10 @@ def reshape(x: Union[Node, np.ndarray], shape: Tuple[int, ...]) -> Node:
     x = to_node(x)
     op = Reshape(shape)
     new_val = op.forward(x.value)
-    return Node(new_val, parents=[x], op=op)
+    if is_grad_enabled():
+        return Node(new_val, parents=[x], op=op)
+    else:
+        return Node(new_val)
 
 #! =====================
 #!   Utility Functions
@@ -250,3 +278,26 @@ def unbroadcast(grad: np.ndarray, shape: Tuple[int, ...]) -> np.ndarray:
         if dimension == 1:
             grad = grad.sum(axis=axis, keepdims=True)
     return grad
+
+
+class no_grad:
+    """Context manager to disable gradient tracking"""
+
+    def __enter__(self) -> None:
+        global _GRAD_ENABLED
+        self.prev = _GRAD_ENABLED  # store previous state to allow nested contexts
+        _GRAD_ENABLED = False
+
+    def __exit__(self, _exc_type, _exc_value, _traceback) -> None:
+        global _GRAD_ENABLED
+        _GRAD_ENABLED = self.prev
+
+
+def is_grad_enabled() -> bool:
+    """function to check if grad is enabled
+
+    Returns:
+        bool: Whether grad is enabled
+    """
+    global _GRAD_ENABLED
+    return _GRAD_ENABLED

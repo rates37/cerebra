@@ -1,6 +1,6 @@
 import numpy as np
 from abc import ABC, abstractmethod
-from .graph import Node, Variable, Operation, to_node
+from .graph import Node, Variable, Operation, to_node, is_grad_enabled
 from typing import Union, Optional, Any, List, Tuple
 
 
@@ -80,7 +80,10 @@ def cross_entropy_loss(x: Union[Node, np.ndarray, float, int], target: np.ndarra
     x = to_node(x)
     op = CrossEntropyLoss(target)
     val = op.forward(x.value)
-    return Node(val, parents=[x], op=op)
+    if is_grad_enabled():
+        return Node(val, parents=[x], op=op)
+    else:
+        return Node(val)
 
 
 # function to convert a convolutional filter(s) to columns:
@@ -232,10 +235,16 @@ class Conv2dLayer(Module):
         if self.bias is not None:
             bias = to_node(self.bias)
             output = op.forward(x.value, weight.value, bias.value)
-            return Node(output, parents=[x, weight, bias], op=op)
+            if is_grad_enabled():
+                return Node(output, parents=[x, weight, bias], op=op)
+            else:
+                return Node(output)
         else:
             output = op.forward(x.value, weight.value)
-            return Node(output, parents=[x, weight], op=op)
+            if is_grad_enabled():
+                return Node(output, parents=[x, weight], op=op)
+            else:
+                return Node(output)
 
 
 # 2D Pooling layer Operations/Functions:
@@ -336,7 +345,10 @@ class MaxPool2D(Module):
     def forward(self, x: Node) -> Node:
         op = MaxPool2DOp(self.kernel_size, self.stride, self.padding)
         out = op.forward(x.value)
-        return Node(out, parents=[x], op=op)
+        if is_grad_enabled():
+            return Node(out, parents=[x], op=op)
+        else:
+            return Node(out)
 
 
 class AvgPool2D(Module):
@@ -355,4 +367,7 @@ class AvgPool2D(Module):
     def forward(self, x: Node) -> Node:
         op = AvgPool2DOp(self.kernel_size, self.stride, self.padding)
         out = op.forward(x.value)
-        return Node(out, parents=[x], op=op)
+        if is_grad_enabled():
+            return Node(out, parents=[x], op=op)
+        else:
+            return Node(out)
