@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from typing import Callable, Optional
-from cerebra import Node, MaxPool2DOp, MaxPool2D, AvgPool2DOp, AvgPool2D
+from cerebra import Node, MaxPool2DOp, MaxPool2D, AvgPool2DOp, AvgPool2D, no_grad
 
 EPSILON = 1e-6
 
@@ -196,6 +196,18 @@ class TestMaxPool2d(unittest.TestCase):
         x_val = self.default_rng.random((N, C, H, W)).astype(np.float64)
         self._check_maxpool_op_backward(op, x_val)
 
+    def test_maxpool2d_no_grad(self):
+        x_val = self.default_rng.random((2, 3, 5, 5)).astype(np.float64)
+        x_node = Node(x_val)
+
+        pool_layer = MaxPool2D(kernel_size=2, stride=2)
+
+        with no_grad():
+            output_node = pool_layer(x_node)
+
+        self.assertEqual(len(output_node.parents), 0)
+        self.assertIsNone(output_node.op)
+
 
 class TestAvgPool2d(unittest.TestCase):
     def setUp(self) -> None:
@@ -348,3 +360,15 @@ class TestAvgPool2d(unittest.TestCase):
         op = AvgPool2DOp(kernel_size=(kh, kw), stride=stride, padding=padding)
         x_val = self.default_rng.random((N, C, H, W)).astype(np.float64)
         self._check_avgpool_op_backward(op, x_val)
+
+    def test_avgpool2d_no_grad(self):
+        x_val = self.default_rng.random((2, 3, 5, 5)).astype(np.float64)
+        x_node = Node(x_val)
+
+        pool_layer = AvgPool2D(kernel_size=2, stride=2)
+
+        with no_grad():
+            output_node = pool_layer(x_node)
+
+        self.assertEqual(len(output_node.parents), 0)
+        self.assertIsNone(output_node.op)
