@@ -1,6 +1,6 @@
 import numpy as np
 from abc import ABC, abstractmethod
-from .graph import Node, Variable, Operation, to_node
+from .graph import Node, Variable, Operation, to_node, is_grad_enabled
 from typing import Union, Optional, Any, List, Tuple
 
 

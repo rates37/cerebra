@@ -11,9 +11,16 @@ Array = npt.NDArray[np.float64]
 OptionalArray = Optional[Array]
 
 
+#! ===========
+#!   Config
+#! ===========
+_GRAD_ENABLED = True
+
 #! ===============
 #!   Basic Nodes
 #! ===============
+
+
 class Node:
     def __init__(
         self,
@@ -25,10 +32,15 @@ class Node:
         if not isinstance(value, np.ndarray):
             value = np.array(value)
         self.value = value
-        self.parents = parents or []
-        self.op = op
         self.grad = None  # will be computed in backprop
         self.name = name
+
+        if is_grad_enabled():
+            self.parents = parents or []
+            self.op = op
+        else:
+            self.parents = []
+            self.op = None
 
     def backward(self, grad: Optional[np.ndarray] = None) -> None:
         nodes = self.top_sort_ancestors()
@@ -111,7 +123,7 @@ class Variable(Node):
     """
 
     def __init__(self, value: Union[np.ndarray, float, int], name: Optional[str] = None) -> None:
-        super().__init__(value, parents=[], op=None, name=name)
+        super().__init__(value, parents=None, op=None, name=name)
 
 
 #! ===================
@@ -250,3 +262,26 @@ def unbroadcast(grad: np.ndarray, shape: Tuple[int, ...]) -> np.ndarray:
         if dimension == 1:
             grad = grad.sum(axis=axis, keepdims=True)
     return grad
+
+
+class no_grad:
+    """Context manager to disable gradient tracking"""
+
+    def __enter__(self) -> None:
+        global _GRAD_ENABLED
+        self.prev = _GRAD_ENABLED  # store previous state to allow nested contexts
+        _GRAD_ENABLED = False
+
+    def __exit__(self, _exc_type, _exc_value, _traceback) -> None:
+        global _GRAD_ENABLED
+        _GRAD_ENABLED = self.prev
+
+
+def is_grad_enabled() -> bool:
+    """function to check if grad is enabled
+
+    Returns:
+        bool: Whether grad is enabled
+    """
+    global _GRAD_ENABLED
+    return _GRAD_ENABLED

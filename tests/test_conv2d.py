@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from typing import Callable
-from cerebra import Node, Conv2d, Parameter, Operation
+from cerebra import Node, Conv2d, Conv2dLayer, Parameter, Operation, no_grad
 
 EPSILON = 1e-6
 
@@ -210,3 +210,15 @@ class TestConv2d(unittest.TestCase):
             (C_out, C_in, kh, kw)).astype(np.float64)
         b_val = self.default_rng.random((C_out,)).astype(np.float64)
         self._check_conv_op_backward(op, x_val, w_val, b_val)
+
+    def test_conv2d_layer_no_grad(self):
+        x_val = self.default_rng.random((2, 3, 5, 5)).astype(np.float64)
+        x_node = Node(x_val)
+
+        conv_layer = Conv2dLayer(in_channels=3, out_channels=4, kernel_size=3)
+
+        with no_grad():
+            output_node = conv_layer(x_node)
+
+        self.assertEqual(len(output_node.parents), 0)
+        self.assertIsNone(output_node.op)
