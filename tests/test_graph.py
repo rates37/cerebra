@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from cerebra import Node, relu
+from cerebra import Node, relu, no_grad, is_grad_enabled
 
 EPSILON = 1e-6
 
@@ -297,3 +297,35 @@ class TestNode(unittest.TestCase):
         # dL / dy = dL / dz * dz/dy = dL/dz * x summed along axis 0
         self.assertTrue(np.allclose(
             y.grad, np.sum(x_val, axis=0), atol=EPSILON))
+
+    def test_no_grad_context(self) -> None:
+        # Check that grad is enabled by default
+        self.assertTrue(is_grad_enabled())
+
+        a = Node(5.0)
+        b = Node(10.0)
+
+        # Test within no_grad context
+        with no_grad():
+            self.assertFalse(is_grad_enabled())
+            y = a + b
+            z = relu(y)
+
+            # Test nested contexts
+            with no_grad():
+                self.assertFalse(is_grad_enabled())
+            self.assertFalse(is_grad_enabled())
+
+        # Check that nodes created inside the context have no parents/operations linking them to other nodes
+        self.assertEqual(len(y.parents), 0)
+        self.assertIsNone(y.op)
+        self.assertEqual(len(z.parents), 0)
+        self.assertIsNone(z.op)
+
+        # check that grad is re-enabled after exiting context
+        self.assertTrue(is_grad_enabled())
+
+        # Check that operations outside the context still track grads
+        x = a + b
+        self.assertEqual(len(x.parents), 2)
+        self.assertIsNotNone(x.op)
