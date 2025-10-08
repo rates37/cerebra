@@ -32,10 +32,15 @@ class Node:
         if not isinstance(value, np.ndarray):
             value = np.array(value)
         self.value = value
-        self.parents = parents or []
-        self.op = op
         self.grad = None  # will be computed in backprop
         self.name = name
+
+        if is_grad_enabled():
+            self.parents = parents or []
+            self.op = op
+        else:
+            self.parents = []
+            self.op = None
 
     def backward(self, grad: Optional[np.ndarray] = None) -> None:
         nodes = self.top_sort_ancestors()
@@ -73,10 +78,7 @@ class Node:
         other = to_node(other)
         op = Add()
         new_val = op.forward(self.value, other.value)
-        if is_grad_enabled():
-            return Node(new_val, parents=[self, other], op=op)
-        else:
-            return Node(new_val)
+        return Node(new_val, parents=[self, other], op=op)
 
     def __radd__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
         return to_node(other).__add__(self)
@@ -85,10 +87,7 @@ class Node:
         other = to_node(other)
         op = Multiply()
         new_val = op.forward(self.value, other.value)
-        if is_grad_enabled():
-            return Node(new_val, parents=[self, other], op=op)
-        else:
-            return Node(new_val)
+        return Node(new_val, parents=[self, other], op=op)
 
     def __rmul__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
         return to_node(other).__mul__(self)
@@ -97,10 +96,7 @@ class Node:
         other = to_node(other)
         op = MatMul()
         new_val = op.forward(self.value, other.value)
-        if is_grad_enabled():
-            return Node(new_val, parents=[self, other], op=op)
-        else:
-            return Node(new_val)
+        return Node(new_val, parents=[self, other], op=op)
 
     def __rmatmul__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
         return to_node(other).__matmul__(self)
@@ -109,10 +105,7 @@ class Node:
         other = to_node(other)
         op = Sub()
         new_val = op.forward(self.value, other.value)
-        if is_grad_enabled():
-            return Node(new_val, parents=[self, other], op=op)
-        else:
-            return Node(new_val)
+        return Node(new_val, parents=[self, other], op=op)
 
     def __rsub__(self, other: Union[Node, np.ndarray, float, int]) -> Node:
         return to_node(other).__sub__(self)
@@ -120,10 +113,7 @@ class Node:
     def __neg__(self) -> Node:
         op = Neg()
         new_val = op.forward(self.value)
-        if is_grad_enabled():
-            return Node(new_val, parents=[self], op=op)
-        else:
-            return Node(new_val)
+        return Node(new_val, parents=[self], op=op)
 
 
 class Variable(Node):
@@ -133,7 +123,7 @@ class Variable(Node):
     """
 
     def __init__(self, value: Union[np.ndarray, float, int], name: Optional[str] = None) -> None:
-        super().__init__(value, parents=[], op=None, name=name)
+        super().__init__(value, parents=None, op=None, name=name)
 
 
 #! ===================
@@ -230,10 +220,7 @@ def relu(x: Union[Node, np.ndarray, float, int]) -> Node:
     x = to_node(x)
     op = ReLU()
     val = op.forward(x.value)
-    if is_grad_enabled():
-        return Node(val, parents=[x], op=op)
-    else:
-        return Node(val)
+    return Node(val, parents=[x], op=op)
 
 
 # reshape operation:
@@ -254,10 +241,7 @@ def reshape(x: Union[Node, np.ndarray], shape: Tuple[int, ...]) -> Node:
     x = to_node(x)
     op = Reshape(shape)
     new_val = op.forward(x.value)
-    if is_grad_enabled():
-        return Node(new_val, parents=[x], op=op)
-    else:
-        return Node(new_val)
+    return Node(new_val, parents=[x], op=op)
 
 #! =====================
 #!   Utility Functions

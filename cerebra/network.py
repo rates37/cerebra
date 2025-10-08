@@ -80,10 +80,7 @@ def cross_entropy_loss(x: Union[Node, np.ndarray, float, int], target: np.ndarra
     x = to_node(x)
     op = CrossEntropyLoss(target)
     val = op.forward(x.value)
-    if is_grad_enabled():
-        return Node(val, parents=[x], op=op)
-    else:
-        return Node(val)
+    return Node(val, parents=[x], op=op)
 
 
 # function to convert a convolutional filter(s) to columns:
@@ -235,16 +232,10 @@ class Conv2dLayer(Module):
         if self.bias is not None:
             bias = to_node(self.bias)
             output = op.forward(x.value, weight.value, bias.value)
-            if is_grad_enabled():
-                return Node(output, parents=[x, weight, bias], op=op)
-            else:
-                return Node(output)
+            return Node(output, parents=[x, weight, bias], op=op)
         else:
             output = op.forward(x.value, weight.value)
-            if is_grad_enabled():
-                return Node(output, parents=[x, weight], op=op)
-            else:
-                return Node(output)
+            return Node(output, parents=[x, weight], op=op)
 
 
 # 2D Pooling layer Operations/Functions:
@@ -345,10 +336,7 @@ class MaxPool2D(Module):
     def forward(self, x: Node) -> Node:
         op = MaxPool2DOp(self.kernel_size, self.stride, self.padding)
         out = op.forward(x.value)
-        if is_grad_enabled():
-            return Node(out, parents=[x], op=op)
-        else:
-            return Node(out)
+        return Node(out, parents=[x], op=op)
 
 
 class AvgPool2D(Module):
@@ -367,7 +355,4 @@ class AvgPool2D(Module):
     def forward(self, x: Node) -> Node:
         op = AvgPool2DOp(self.kernel_size, self.stride, self.padding)
         out = op.forward(x.value)
-        if is_grad_enabled():
-            return Node(out, parents=[x], op=op)
-        else:
-            return Node(out)
+        return Node(out, parents=[x], op=op)
