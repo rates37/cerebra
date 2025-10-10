@@ -263,7 +263,30 @@ def tanh(x: Union[Node, np.ndarray, float, int]) -> Node:
     return Node(val, parents=[x], op=op)
 
 
+class LeakyReLU(Operation):
+    def __init__(self, negative_slope: float = 0.01) -> None:
+        self.negative_slope = negative_slope
+
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        self.mask = x > 0
+        out = np.where(self.max, x, self.negative_slope * x)
+        return out
+
+    def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
+        grad = output_grad * (self.mask.astype(output_grad.dtype) +
+                              (~self.mask).astype(output_grad.dtype)*self.negative_slope)
+        return [grad]
+
+
+def leaky_relu(x: Union[Node, np.ndarray, float, int], negative_slope: float = 0.01) -> Node:
+    x = to_node(x)
+    op = LeakyReLU(negative_slope)
+    val = op.forward(x.value)
+    return Node(val, parents=[x], op=op)
+
 # reshape operation:
+
+
 class Reshape(Operation):
     def __init__(self, shape: Tuple[int, ...]) -> None:
         self.shape = shape
