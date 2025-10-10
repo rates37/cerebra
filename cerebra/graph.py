@@ -244,6 +244,25 @@ def sigmoid(x: Union[Node, np.ndarray, float, int]) -> Node:
     return Node(val, parents=[x], op=op)
 
 
+class Tanh(Operation):
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        out = np.tanh(x)
+        self.out = out
+        return out
+
+    def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
+        # d/dx(tanh(x)) = 1 - (tanh(x))^2
+        grad = output_grad * (1.0 - self.out*self.out)
+        return [grad]
+
+
+def tanh(x: Union[Node, np.ndarray, float, int]) -> Node:
+    x = to_node(x)
+    op = Tanh()
+    val = op.forward(x.value)
+    return Node(val, parents=[x], op=op)
+
+
 # reshape operation:
 class Reshape(Operation):
     def __init__(self, shape: Tuple[int, ...]) -> None:
