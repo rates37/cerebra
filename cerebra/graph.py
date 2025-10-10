@@ -203,22 +203,43 @@ class Neg(Operation):
     def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
         return [unbroadcast(-output_grad, node.parents[0].value.shape)]
 
+#! ========================
+#!   Activation Functions
+#! ========================
+
 
 class ReLU(Operation):
     def forward(self, x: np.ndarray) -> np.ndarray:
         self.mask = x > 0
         return np.maximum(x, 0)
 
-    def backward(self, output_grad, node):
+    def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
         x_val = node.parents[0].value
         grad = output_grad * (x_val > 0)
         return [grad]
 
 
-# used as a separate function since no operator to overload
 def relu(x: Union[Node, np.ndarray, float, int]) -> Node:
     x = to_node(x)
     op = ReLU()
+    val = op.forward(x.value)
+    return Node(val, parents=[x], op=op)
+
+
+class Sigmoid(Operation):
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        out = 1.0 / (1.0 + np.exp(-x))
+        self.out = out
+        return out
+
+    def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
+        grad = output_grad * (self.out * (1.0 - self.out))
+        return [grad]
+
+
+def sigmoid(x: Union[Node, np.ndarray, float, int]) -> Node:
+    x = to_node(x)
+    op = Sigmoid()
     val = op.forward(x.value)
     return Node(val, parents=[x], op=op)
 
