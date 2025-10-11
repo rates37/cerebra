@@ -284,6 +284,29 @@ def leaky_relu(x: Union[Node, np.ndarray, float, int], negative_slope: float = 0
     val = op.forward(x.value)
     return Node(val, parents=[x], op=op)
 
+
+class ELU(Operation):
+    def __init__(self, alpha: float = 1.0) -> None:
+        self.alpha = alpha
+
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        self.positive_mask = x > 0
+        self.e_x = np.exp(x)
+        out = np.where(self.positive_mask, x, self.alpha * (self.e_x - 1.0))
+        return out
+
+    def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
+        grad = np.where(self.positive_mask, output_grad,
+                        output_grad * (self.alpha * self.e_x))
+        return [grad]
+
+
+def elu(x: Union[Node, np.ndarray, float, int], alpha: float = 1.0) -> Node:
+    x = to_node(x)
+    op = ELU(alpha)
+    val = op.forward(x.value)
+    return Node(val, parents=[x], op=op)
+
 # reshape operation:
 
 
