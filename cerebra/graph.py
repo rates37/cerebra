@@ -269,7 +269,7 @@ class LeakyReLU(Operation):
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         self.mask = x > 0
-        out = np.where(self.max, x, self.negative_slope * x)
+        out = np.where(self.mask, x, self.negative_slope * x)
         return out
 
     def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
