@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from typing import Callable
-from cerebra import Node, relu, sigmoid, tanh, leaky_relu
+from cerebra import Node, relu, sigmoid, tanh, leaky_relu, elu
 
 
 EPSILON = 1e-6
@@ -160,4 +160,46 @@ class TestActivationFunction(unittest.TestCase):
             y = leaky_relu(x, negative_slope=slope)
             y.backward(np.ones_like(y.value))
             expected = np.where(x_vals > 0, 1, slope)
+            self.assertTrue(np.allclose(expected, x.grad, atol=EPSILON))
+
+    def test_elu_forward(self) -> None:
+        x_vals = np.array([-3.0, -1.0, 0.0, 0.5, 2.0, 10.0], dtype=np.float64)
+        alpha_vals = [1.0, 0.5]
+        for alpha in alpha_vals:
+            x = Node(x_vals)
+            expected = np.where(x_vals >= 0.0, x_vals,
+                                alpha * (np.exp(x_vals)-1.0))
+
+            # test elu on ndarray:
+            y = elu(x_vals, alpha=alpha)
+            self.assertTrue(np.allclose(y.value, expected, atol=EPSILON))
+
+            # test elu on Node:
+            y = elu(x, alpha=alpha)
+            self.assertTrue(np.allclose(y.value, expected, atol=EPSILON))
+
+            # test elu on int:
+            for x_val in x_vals:
+                x_val = int(x_val)
+                y = elu(x_val, alpha=alpha)
+                expected = x_val if x_val >= 0 else alpha * (np.exp(x_val)-1.0)
+                self.assertTrue(np.allclose(
+                    [y.value], [expected], atol=EPSILON))
+
+            # test elu on floats:
+            for x_val in x_vals:
+                y = elu(x_val, alpha=alpha)
+                expected = x_val if x_val >= 0 else alpha * (np.exp(x_val)-1.0)
+                self.assertTrue(np.allclose(
+                    [y.value], [expected], atol=EPSILON))
+
+    def test_elu_backward(self) -> None:
+        x_vals = np.array([-3.0, -1.0, 0.0, 0.5, 2.0, 10.0], dtype=np.float64)
+        alpha_vals = [1.0, 0.5]
+        for alpha in alpha_vals:
+            x = Node(x_vals)
+
+            y = elu(x, alpha=alpha)
+            y.backward(np.ones_like(y.value))
+            expected = np.where(x_vals > 0.0, 1.0, alpha*np.exp(x_vals))
             self.assertTrue(np.allclose(expected, x.grad, atol=EPSILON))
