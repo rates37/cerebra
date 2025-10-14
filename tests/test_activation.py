@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from typing import Callable
-from cerebra import Node, relu
+from cerebra import Node, relu, sigmoid
 
 
 EPSILON = 1e-6
@@ -21,24 +21,24 @@ class TestActivationFunction(unittest.TestCase):
 
         # test relu on ndarray:
         y = relu(x_vals)
-        self.assertTrue(np.allclose(y.value, expected))
+        self.assertTrue(np.allclose(y.value, expected, atol=EPSILON))
 
         # test relu on Node:
         y = relu(x)
-        self.assertTrue(np.allclose(y.value, expected))
+        self.assertTrue(np.allclose(y.value, expected, atol=EPSILON))
 
         # test relu on int:
         for x_val in x_vals:
             x_val = int(x_val)
             y = relu(x_val)
             expected = np.maximum(x_val, 0)
-            self.assertTrue(np.allclose([y.value], [expected]))
+            self.assertTrue(np.allclose([y.value], [expected], atol=EPSILON))
 
         # test relu on floats:
         for x_val in x_vals:
             y = relu((x_val))
             expected = np.maximum(x_val, 0)
-            self.assertTrue(np.allclose([y.value], [expected]))
+            self.assertTrue(np.allclose([y.value], [expected], atol=EPSILON))
 
     def test_relu_backward(self) -> None:
         x_vals = np.array([-3.0, -1.0, 0.0, 0.5, 2.0, 10.0], dtype=np.float64)
@@ -48,3 +48,29 @@ class TestActivationFunction(unittest.TestCase):
         y.backward(np.ones_like(y.value))
         expected = (x_vals > 0).astype(np.float64)
         self.assertTrue(np.allclose(expected, x.grad, atol=EPSILON))
+
+    def test_sigmoid_forward(self) -> None:
+        x_vals = np.array([-3.0, -1.0, 0.0, 0.5, 2.0, 10.0], dtype=np.float64)
+        x = Node(x_vals)
+        expected = 1.0 / (1.0 + np.exp(-x_vals))
+
+        # test sigmoid on ndarray:
+        y = sigmoid(x_vals)
+        self.assertTrue(np.allclose(y.value, expected, atol=EPSILON))
+
+        # test sigmoid on Node:
+        y = sigmoid(x)
+        self.assertTrue(np.allclose(y.value, expected, atol=EPSILON))
+
+        # test sigmoid on int:
+        for x_val in x_vals:
+            x_val = int(x_val)
+            y = sigmoid(x_val)
+            expected = 1.0 / (1.0 + np.exp(-x_val))
+            self.assertTrue(np.allclose([y.value], [expected], atol=EPSILON))
+
+        # test sigmoid on floats:
+        for x_val in x_vals:
+            y = sigmoid((x_val))
+            expected = 1.0 / (1.0 + np.exp(-x_val))
+            self.assertTrue(np.allclose([y.value], [expected], atol=EPSILON))
