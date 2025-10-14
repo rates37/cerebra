@@ -74,3 +74,13 @@ class TestActivationFunction(unittest.TestCase):
             y = sigmoid((x_val))
             expected = 1.0 / (1.0 + np.exp(-x_val))
             self.assertTrue(np.allclose([y.value], [expected], atol=EPSILON))
+
+    def test_sigmoid_backward(self) -> None:
+        x_vals = np.array([-3.0, -1.0, 0.0, 0.5, 2.0, 10.0], dtype=np.float64)
+        x = Node(x_vals)
+
+        y = sigmoid(x)
+        y.backward(np.ones_like(y.value))
+        expected_forward = 1.0 / (1.0 + np.exp(-x_vals))
+        expected = expected_forward * (1.0 - expected_forward)
+        self.assertTrue(np.allclose(expected, x.grad, atol=EPSILON))
