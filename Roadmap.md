@@ -18,7 +18,6 @@ This file outlines planned features, improvements, and ongoing goals.
 | Graph visualisation | Low | Eg to mermaid diagrams |
 | Dataset and Dataloaders | Medium |  |
 | Trainer classes | Medium |  |
-| More activation functions | Medium | E.g., tanh, sigmoid, etc. |
 | Optimise implementations | Low | Some features may be inefficiently implemented such as using for loops in Conv2d layers |
 | More optimisers | Medium | ADAM, Adagrad, etc. |
 | Learning Rate Schedulers | Low | |
@@ -28,12 +27,12 @@ This file outlines planned features, improvements, and ongoing goals.
 
 ---
 
-## Completed Features (todo)
+## Completed Features
 
 | Feature | Description | Released In |
 |--------|-------------|-------------|
 | `no_grad` | A context manager that disables automatic gradient tracking | v0.0.1 |
-
+| Activation functions | Added common activations functions `sigmoid`, `tanh`, `elu`, `leaky_relu` | v0.0.1 |
 ---
 
 ## Community Suggestions
