@@ -82,34 +82,34 @@ Coming soon...
 1. Clone the repository:
 ```bash
 git clone https://github.com/rates37/cerebra.git
-```
-
-2. Navigate to main project directory:
-```bash
 cd cerebra
 ```
 
-3. Setup a Virtual Environment (optional)
+2. Install dependencies using [uv](https://github.com/astral-sh/uv):
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+uv sync
 ```
 
-4. Install package locally:
+3. Verify installation:
 ```bash
-pip install -e .
+uv run python -c "import cerebra; print('cerebra installed successfully')"
 ```
 
-5. Verify installation:
-If no error occur, the package has been installed successfully.
+### Development
+
+To run scripts or examples within the environment:
 ```bash
-python -c "import cerebra"
+uv run python examples/your_script.py
 ```
 
-### Uninstallation
-To remove the package:
+To add new dependencies:
 ```bash
-pip uninstall cerebra
+uv add some-package
+```
+
+To run tests:
+```bash
+uv run pytest
 ```
 
 ## Quick Start
