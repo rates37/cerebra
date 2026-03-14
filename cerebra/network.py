@@ -1,6 +1,6 @@
 import numpy as np
 from abc import ABC, abstractmethod
-from .graph import Node, Variable, Operation, to_node, is_grad_enabled
+from .graph import Node, Variable, Operation, to_node
 from typing import Union, Optional, Any, List, Tuple
 
 
@@ -33,7 +33,7 @@ class Linear(Module):
         # Normal Xavier Initialisation
         self.weight = Parameter(
             np.random.randn(in_features, out_features) *
-            np.sqrt(2 / (in_features)),
+            np.sqrt(2 / (in_features + out_features)),
             name="weight"
         )
 
@@ -215,9 +215,11 @@ class Conv2dLayer(Module):
             kernel_size = (kernel_size, kernel_size)
         self.stride = stride
         self.padding = padding
+        fan_in = in_channels * kernel_size[0] * kernel_size[1]
+        fan_out = out_channels * kernel_size[0] * kernel_size[1]
         self.weight = Parameter(
             np.random.randn(out_channels, in_channels, kernel_size[0], kernel_size[1]) *
-            np.sqrt(2 / (in_channels * kernel_size[0] * kernel_size[1])),
+            np.sqrt(2 / (fan_in + fan_out)),
             name="conv2d_weight"
         )
         if bias:

@@ -112,6 +112,13 @@ To run tests:
 uv run pytest
 ```
 
+When adding new features, please ensure that the test coverage is maintained above 80%. While coverage is not necessarily indicative of the quality of the tests, completely untested code is a significantly worse issue. To check the coverage, run:
+```bash
+uv run pytest --cov=cerebra --cov-report=term-missing
+```
+
+Pull requests will not be accepted unless the above condition is met (among other checks).
+
 ## Quick Start
 
 Coming soon. For now, see the `examples` directory.
