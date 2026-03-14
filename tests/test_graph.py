@@ -329,3 +329,104 @@ class TestNode(unittest.TestCase):
         x = a + b
         self.assertEqual(len(x.parents), 2)
         self.assertIsNotNone(x.op)
+
+    def test_matmul_backward(self) -> None:
+        a_val = self.default_rng.random((2, 3))
+        b_val = self.default_rng.random((3, 4))
+        a = Node(a_val)
+        b = Node(b_val)
+        c = a @ b
+
+        grad_out = self.default_rng.random((2, 4))
+        c.backward(grad_out)
+
+        # dL/da = grad_out @ b.T
+        expected_a_grad = grad_out @ b_val.T
+        # dL/db = a.T @ grad_out
+        expected_b_grad = a_val.T @ grad_out
+
+        self.assertTrue(np.allclose(a.grad, expected_a_grad, atol=EPSILON))
+        self.assertTrue(np.allclose(b.grad, expected_b_grad, atol=EPSILON))
+
+    def test_sub_backward(self) -> None:
+        # Trivial Case
+        a_val = np.array([10.0, 20.0])
+        b_val = np.array([1.0, 2.0])
+        a = Node(a_val)
+        b = Node(b_val)
+        c = a - b
+        c.backward()
+
+        self.assertTrue(np.allclose(a.grad, np.array([1.0, 1.0]), atol=EPSILON))
+        self.assertTrue(np.allclose(b.grad, np.array([-1.0, -1.0]), atol=EPSILON))
+
+        # Test with broadcasting
+        x_val = np.array([[10.0, 20.0], [30.0, 40.0]])
+        y_val = np.array([1.0, 2.0])  # broadcast to [[1,2],[1,2]]
+        x = Node(x_val)
+        y = Node(y_val)
+        z = x - y
+        z.backward()
+
+        # dL/dx = [[1,1], [1,1]]
+        self.assertTrue(np.allclose(x.grad, np.ones_like(x_val), atol=EPSILON))
+        # dL/dy = [[-1,-1], [-1,-1]] summed over axis 0 = [-2, -2]
+        self.assertTrue(np.allclose(y.grad, np.array([-2.0, -2.0]), atol=EPSILON))
+
+    def test_neg_backward(self) -> None:
+        a_val = np.array([1.0, -2.0, 3.0])
+        a = Node(a_val)
+        b = -a
+        b.backward()
+
+        self.assertTrue(np.allclose(a.grad, np.array([-1.0, -1.0, -1.0]), atol=EPSILON))
+
+    def test_reshape(self) -> None:
+        from cerebra import reshape
+
+        a_val = np.arange(6).reshape((2, 3))
+        a = Node(a_val)
+
+        # Test function
+        new_shape = (3, 2)
+        b = reshape(a, new_shape)
+
+        self.assertEqual(b.value.shape, new_shape)
+        self.assertTrue(np.allclose(b.value, a_val.reshape(new_shape), atol=EPSILON))
+
+        # Test backward (testing the Reshape operation)
+        grad_out = np.arange(6).reshape(new_shape)
+        b.backward(grad_out)
+
+        self.assertTrue(np.allclose(a.grad, grad_out.reshape((2, 3)), atol=EPSILON))
+
+    def test_unbroadcast_utility(self) -> None:
+        from cerebra.graph import unbroadcast
+
+        # Case 1: Same shape
+        grad = np.array([1, 2, 3])
+        shape = (3,)
+        self.assertTrue(np.array_equal(unbroadcast(grad, shape), grad))
+
+        # Case 2: Extra dimensions
+        grad = np.array([[1, 2], [3, 4]])
+        shape = (2,)
+        # sum over axis 0: [4, 6]
+        self.assertTrue(np.array_equal(unbroadcast(grad, shape), np.array([4, 6])))
+
+        # Case 3: Dimension is 1 (broadcasting)
+        grad = np.array([[1, 2], [3, 4]])
+        shape = (2, 1)
+        # sum over axis 1 and keepdims=True: [[3], [7]]
+        self.assertTrue(np.array_equal(unbroadcast(grad, shape), np.array([[3], [7]])))
+
+        # Case 4: Complex mixing
+        grad = np.random.rand(2, 3, 4, 5)
+        shape = (3, 1, 5)
+        # 1. len(grad.shape) > len(shape) -> sum over axis 0: shape (3, 4, 5)
+        # 2. dimension 1 at axis 1 -> sum over axis 1: shape (3, 1, 5)
+        res = unbroadcast(grad, shape)
+        self.assertEqual(res.shape, shape)
+
+        expected = grad.sum(axis=0).sum(axis=1, keepdims=True)
+        self.assertTrue(np.allclose(res, expected, atol=EPSILON))
