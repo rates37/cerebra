@@ -315,7 +315,7 @@ class TestAvgPool2d(unittest.TestCase):
     #! ==========================
     def _check_avgpool_op_backward(
         self,
-        op: MaxPool2DOp,
+        op: AvgPool2DOp,
         x_val: np.ndarray,
         grad_val: Optional[np.ndarray] = None
     ) -> None:
