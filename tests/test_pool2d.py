@@ -6,7 +6,7 @@ from cerebra import Node, MaxPool2DOp, MaxPool2D, AvgPool2DOp, AvgPool2D, no_gra
 EPSILON = 1e-6
 
 
-def numerical_gradient(func: Callable[[None], Node], node: Node, h=1e-6) -> np.ndarray:
+def numerical_gradient(func: Callable[[], Node], node: Node, h=1e-6) -> np.ndarray:
     """Compute gradient of node w.r.t. input
 
     Args:

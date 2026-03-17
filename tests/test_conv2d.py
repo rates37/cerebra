@@ -6,7 +6,7 @@ from cerebra import Node, Conv2d, Conv2dLayer, Parameter, Operation, no_grad
 EPSILON = 1e-6
 
 
-def numerical_gradient(func: Callable[[None], Node], node: Node, h=1e-6) -> np.ndarray:
+def numerical_gradient(func: Callable[[], Node], node: Node, h=1e-6) -> np.ndarray:
     """Compute gradient of node w.r.t. input
 
     Args:
