@@ -84,62 +84,84 @@ def cross_entropy_loss(x: Union[Node, np.ndarray, float, int], target: np.ndarra
 
 
 # function to convert a convolutional filter(s) to columns:
-def convert_to_col(x: np.ndarray, kernel_h: int, kernel_w: int, stride: int, padding: int) -> Tuple[np.ndarray, int, int]:
+def convert_to_col(x: np.ndarray, kernel_h: int, kernel_w: int, stride: Union[int, Tuple[int, int]], padding: Union[int, Tuple[int, int]]) -> Tuple[np.ndarray, int, int]:
     # extract shape
     N, C, H, W = x.shape
 
+    # handle stride/padding as tuples:
+    if isinstance(stride, int):
+        stride_h = stride_w = stride
+    else:
+        stride_h, stride_w = stride
+
+    if isinstance(padding, int):
+        pad_h = pad_w = padding
+    else:
+        pad_h, pad_w = padding
+
     # apply padding:
-    H += 2*padding
-    W += 2*padding
-    x = np.pad(x, ((0, 0), (0, 0), (padding, padding),
-               (padding, padding)), mode='constant')
+    H += 2*pad_h
+    W += 2*pad_w
+    x = np.pad(x, ((0, 0), (0, 0), (pad_h, pad_h),
+               (pad_w, pad_w)), mode='constant')
 
     # compute output shape
-    out_h = (H - kernel_h) // stride + 1
-    out_w = (W - kernel_w) // stride + 1
+    out_h = (H - kernel_h) // stride_h + 1
+    out_w = (W - kernel_w) // stride_w + 1
 
     # create output columns matrix:
     col = np.empty((N, C, kernel_h, kernel_w, out_h, out_w), dtype=x.dtype)
 
     # fill out cols:
     for y in range(kernel_h):
-        y_max = y + out_h*stride
+        y_max = y + out_h*stride_h
 
         for x_i in range(kernel_w):
-            x_max = x_i + out_w*stride
-            col[:, :, y, x_i, :, :] = x[:, :, y:y_max:stride, x_i:x_max:stride]
+            x_max = x_i + out_w*stride_w
+            col[:, :, y, x_i, :, :] = x[:, :, y:y_max:stride_h, x_i:x_max:stride_w]
     col = col.reshape(N, C*kernel_h*kernel_w, out_h * out_w)
     return col, out_h, out_w
 
 
 def convert_from_col(cols: np.ndarray, x_shape: Tuple[int, int, int, int], kernel_h: int,
-                     kernel_w: int, stride: int, padding: int) -> np.ndarray:
+                      kernel_w: int, stride: Union[int, Tuple[int, int]], padding: Union[int, Tuple[int, int]]) -> np.ndarray:
     # convert the tensor from the expanded column tensor back to original shape
     # x_shape = (N, C, H, W)
     N, C, H, W = x_shape
-    h_padded = H + 2*padding
-    w_padded = W + 2*padding
-    h_out = (h_padded - kernel_h) // stride + 1
-    w_out = (w_padded - kernel_w) // stride + 1
+
+    # handle stride/padding as tuples:
+    if isinstance(stride, int):
+        stride_h = stride_w = stride
+    else:
+        stride_h, stride_w = stride
+
+    if isinstance(padding, int):
+        pad_h = pad_w = padding
+    else:
+        pad_h, pad_w = padding
+
+    h_padded = H + 2*pad_h
+    w_padded = W + 2*pad_w
+    h_out = (h_padded - kernel_h) // stride_h + 1
+    w_out = (w_padded - kernel_w) // stride_w + 1
 
     cols_reshaped = cols.reshape(N, C, kernel_h, kernel_w, h_out, w_out)
     x_pad = np.zeros((N, C, h_padded, w_padded), dtype=cols.dtype)
 
     for y in range(kernel_h):
-        max_y = y + stride*h_out
+        max_y = y + stride_h*h_out
         for xi in range(kernel_w):
-            max_x = xi + stride*w_out
-            x_pad[:, :, y:max_y:stride,
-                  xi:max_x:stride] += cols_reshaped[:, :, y, xi, :, :]
-    if padding == 0:
+            max_x = xi + stride_w*w_out
+            x_pad[:, :, y:max_y:stride_h,
+                  xi:max_x:stride_w] += cols_reshaped[:, :, y, xi, :, :]
+
+    if pad_h == 0 and pad_w == 0:
         return x_pad
-    return x_pad[:, :, padding:-padding, padding:-padding]
+    return x_pad[:, :, pad_h:H+pad_h, pad_w:W+pad_w]
 
 
 class Conv2d(Operation):
-    def __init__(self, stride: int = 1, padding: int = 0) -> None:
-        # todo: allow for differing x and y stride/paddings
-        # todo: convert stride / padding type from int to Union[int, Tuple[int, int]]
+    def __init__(self, stride: Union[int, Tuple[int, int]] = 1, padding: Union[int, Tuple[int, int]] = 0) -> None:
         self.stride = stride
         self.padding = padding
 
@@ -206,8 +228,8 @@ class Conv2dLayer(Module):
                  in_channels: int,
                  out_channels: int,
                  kernel_size: Union[int, Tuple[int, int]],
-                 stride: int = 1,
-                 padding: int = 0,
+                 stride: Union[int, Tuple[int, int]] = 1,
+                 padding: Union[int, Tuple[int, int]] = 0,
                  bias: bool = True
                  ) -> None:
         super().__init__()
@@ -243,7 +265,7 @@ class Conv2dLayer(Module):
 # 2D Pooling layer Operations/Functions:
 
 class MaxPool2DOp(Operation):
-    def __init__(self, kernel_size: Tuple[int, int], stride: int = 1, padding: int = 0) -> None:
+    def __init__(self, kernel_size: Tuple[int, int], stride: Union[int, Tuple[int, int]] = 1, padding: Union[int, Tuple[int, int]] = 0) -> None:
         self.kh, self.kw = kernel_size
         self.stride = stride
         self.padding = padding
@@ -285,7 +307,7 @@ class MaxPool2DOp(Operation):
 
 
 class AvgPool2DOp(Operation):
-    def __init__(self, kernel_size: Tuple[int, int], stride: int = 1, padding: int = 0) -> None:
+    def __init__(self, kernel_size: Tuple[int, int], stride: Union[int, Tuple[int, int]] = 1, padding: Union[int, Tuple[int, int]] = 0) -> None:
         self.kh, self.kw = kernel_size
         self.stride = stride
         self.padding = padding
@@ -325,8 +347,8 @@ class AvgPool2DOp(Operation):
 class MaxPool2D(Module):
     def __init__(self,
                  kernel_size: Union[int, Tuple[int, int]],
-                 stride: int = 1,
-                 padding: int = 0
+                 stride: Union[int, Tuple[int, int]] = 1,
+                 padding: Union[int, Tuple[int, int]] = 0
                  ):
         if isinstance(kernel_size, int):
             self.kernel_size = (kernel_size, kernel_size)
@@ -344,8 +366,8 @@ class MaxPool2D(Module):
 class AvgPool2D(Module):
     def __init__(self,
                  kernel_size: Union[int, Tuple[int, int]],
-                 stride: int = 1,
-                 padding: int = 0
+                 stride: Union[int, Tuple[int, int]] = 1,
+                 padding: Union[int, Tuple[int, int]] = 0
                  ):
         if isinstance(kernel_size, int):
             self.kernel_size = (kernel_size, kernel_size)
