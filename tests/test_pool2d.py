@@ -244,6 +244,27 @@ class TestMaxPool2d(unittest.TestCase):
         self.assertEqual(len(output_node.parents), 0)
         self.assertIsNone(output_node.op)
 
+    def test_maxpool2d_asymmetric_stride_padding(self):
+        op = MaxPool2DOp(kernel_size=(2, 2), stride=(2, 1), padding=(1, 0))
+        x_val = self.default_rng.random((1, 1, 4, 4)).astype(np.float64)
+        output = op.forward(x_val)
+        self.assertEqual(output.shape, (1, 1, 3, 3))
+        self._check_maxpool_op_backward(op, x_val)
+
+    def test_maxpool2d_kernel_larger_than_input(self):
+        op = MaxPool2DOp(kernel_size=(4, 4), stride=1, padding=1)
+        x_val = self.default_rng.random((1, 1, 3, 3)).astype(np.float64)
+        output = op.forward(x_val)
+        self.assertEqual(output.shape, (1, 1, 2, 2))
+        self._check_maxpool_op_backward(op, x_val)
+
+    def test_maxpool2d_stride_larger_than_kernel(self):
+        op = MaxPool2DOp(kernel_size=(2, 2), stride=3, padding=0)
+        x_val = self.default_rng.random((1, 1, 5, 5)).astype(np.float64)
+        output = op.forward(x_val)
+        self.assertEqual(output.shape, (1, 1, 2, 2))
+        self._check_maxpool_op_backward(op, x_val)
+
 
 class TestAvgPool2d(unittest.TestCase):
     def setUp(self) -> None:
@@ -436,3 +457,24 @@ class TestAvgPool2d(unittest.TestCase):
 
         self.assertEqual(len(output_node.parents), 0)
         self.assertIsNone(output_node.op)
+
+    def test_avgpool2d_asymmetric_stride_padding(self):
+        op = AvgPool2DOp(kernel_size=(2, 2), stride=(2, 1), padding=(1, 0))
+        x_val = self.default_rng.random((1, 1, 4, 4)).astype(np.float64)
+        output = op.forward(x_val)
+        self.assertEqual(output.shape, (1, 1, 3, 3))
+        self._check_avgpool_op_backward(op, x_val)
+
+    def test_avgpool2d_kernel_larger_than_input(self):
+        op = AvgPool2DOp(kernel_size=(4, 4), stride=1, padding=1)
+        x_val = self.default_rng.random((1, 1, 3, 3)).astype(np.float64)
+        output = op.forward(x_val)
+        self.assertEqual(output.shape, (1, 1, 2, 2))
+        self._check_avgpool_op_backward(op, x_val)
+
+    def test_avgpool2d_stride_larger_than_kernel(self):
+        op = AvgPool2DOp(kernel_size=(2, 2), stride=3, padding=0)
+        x_val = self.default_rng.random((1, 1, 5, 5)).astype(np.float64)
+        output = op.forward(x_val)
+        self.assertEqual(output.shape, (1, 1, 2, 2))
+        self._check_avgpool_op_backward(op, x_val)
