@@ -145,6 +145,42 @@ class TestMaxPool2d(unittest.TestCase):
 
         self.assertTrue(np.allclose(out.value, expected_out, atol=EPSILON))
 
+    def test_maxpool2d_op_forward_asymmetric_padding(self):
+        x_val = np.arange(1, 10, dtype=np.float32).reshape(1, 1, 3, 3)
+        # padding (1, 0)
+        # Padded X:
+        # 0 0 0
+        # 1 2 3
+        # 4 5 6
+        # 7 8 9
+        # 0 0 0
+        pool = MaxPool2DOp(kernel_size=(2, 2), stride=1, padding=(1, 0))
+        out = pool.forward(x_val)
+        self.assertEqual(out.shape, (1, 1, 4, 2))
+        expected_out = np.array([[[[2, 3],
+                                   [5, 6],
+                                   [8, 9],
+                                   [8, 9]]]], dtype=np.float32)
+        self.assertTrue(np.allclose(out, expected_out, atol=EPSILON))
+
+    def test_maxpool2d_op_forward_asymmetric_stride(self):
+        x_val = np.arange(1, 17, dtype=np.float32).reshape(1, 1, 4, 4)
+        # stride (1, 2)
+        # oh = (4-2)//1 + 1 = 3, ow = (4-2)//2 + 1 = 2
+        pool = MaxPool2DOp(kernel_size=(2, 2), stride=(1, 2))
+        out = pool.forward(x_val)
+        self.assertEqual(out.shape, (1, 1, 3, 2))
+        
+        # Expected output:
+        # kernel at (0,0): [[1,2],[5,6]] -> 6
+        # kernel at (0,1): [[3,4],[7,8]] -> 8
+        # kernel at (1,0): [[5,6],[9,10]] -> 10
+        # kernel at (1,1): [[7,8],[11,12]] -> 12
+        # kernel at (2,0): [[9,10],[13,14]] -> 14
+        # kernel at (2,1): [[11,12],[15,16]] -> 16
+        expected_out = np.array([[[[6, 8], [10, 12], [14, 16]]]], dtype=np.float32)
+        self.assertTrue(np.allclose(out, expected_out, atol=EPSILON))
+
     #! ==========================
     #!    Backward Pool Tests
     #! ==========================
@@ -309,6 +345,34 @@ class TestAvgPool2d(unittest.TestCase):
                ]]], dtype=np.float32)
 
         self.assertTrue(np.allclose(out.value, expected_out, atol=EPSILON))
+
+    def test_avgpool2d_op_forward_asymmetric_padding(self):
+        x_val = np.arange(1, 10, dtype=np.float32).reshape(1, 1, 3, 3)
+        pool = AvgPool2DOp(kernel_size=(2, 2), stride=1, padding=(1, 0))
+        out = pool.forward(x_val)
+        self.assertEqual(out.shape, (1, 1, 4, 2))
+        expected_out = np.array([[[[0.75, 1.25],
+                                   [3.0, 4.0],
+                                   [6.0, 7.0],
+                                   [3.75, 4.25]]]], dtype=np.float32)
+        self.assertTrue(np.allclose(out, expected_out, atol=EPSILON))
+
+    def test_avgpool2d_op_forward_asymmetric_stride(self):
+        x_val = np.arange(1, 17, dtype=np.float32).reshape(1, 1, 4, 4)
+        # stride (1, 2)
+        pool = AvgPool2DOp(kernel_size=(2, 2), stride=(1, 2))
+        out = pool.forward(x_val)
+        self.assertEqual(out.shape, (1, 1, 3, 2))
+        
+        # Expected means:
+        # kernel at (0,0): [[1,2],[5,6]] -> 14/4 = 3.5
+        # kernel at (0,1): [[3,4],[7,8]] -> 22/4 = 5.5
+        # kernel at (1,0): [[5,6],[9,10]] -> 30/4 = 7.5
+        # kernel at (1,1): [[7,8],[11,12]] -> 38/4 = 9.5
+        # kernel at (2,0): [[9,10],[13,14]] -> 46/4 = 11.5
+        # kernel at (2,1): [[11,12],[15,16]] -> 54/4 = 13.5
+        expected_out = np.array([[[[3.5, 5.5], [7.5, 9.5], [11.5, 13.5]]]], dtype=np.float32)
+        self.assertTrue(np.allclose(out, expected_out, atol=EPSILON))
 
     #! ==========================
     #!    Backward Pool Tests
