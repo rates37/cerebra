@@ -177,7 +177,7 @@ class TestConv2d(unittest.TestCase):
         self.assertTrue(np.allclose(
             grads[1], dw_numerical, atol=EPSILON, rtol=EPSILON))
 
-        if b_val is not None:
+        if b_val is not None and b_node is not None:
             db_numerical = numerical_gradient(get_loss_as_node, b_node)
             self.assertTrue(np.allclose(
                 grads[2], db_numerical, atol=EPSILON, rtol=EPSILON))
