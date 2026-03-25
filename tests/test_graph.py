@@ -2,6 +2,7 @@ import unittest
 import numpy as np
 
 from cerebra import Node, relu, no_grad, is_grad_enabled
+from cerebra.core import unbroadcast
 
 EPSILON = 1e-6
 
@@ -413,8 +414,6 @@ class TestNode(unittest.TestCase):
         self.assertTrue(np.allclose(a.grad, grad_out.reshape((2, 3)), atol=EPSILON))
 
     def test_unbroadcast_utility(self) -> None:
-        from cerebra.graph import unbroadcast
-
         # Case 1: Same shape
         grad = np.array([1, 2, 3])
         shape = (3,)
