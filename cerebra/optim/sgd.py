@@ -1,7 +1,6 @@
-from .network import Parameter
+from ..nn.module import Parameter
 from typing import List
 import numpy as np
-
 
 class SGD:
     def __init__(self, parameters: List[Parameter], lr: float = 0.01) -> None:
