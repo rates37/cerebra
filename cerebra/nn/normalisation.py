@@ -15,25 +15,19 @@ class BatchNormOp(Operation):
         self.spatial_dims = None
 
     def forward(self, x: np.ndarray, gamma: np.ndarray, beta: np.ndarray) -> np.ndarray:
-        # just simplify input shapes for now
-        # x shape: (N, C) or (N, C, H, W)
-        # gamma, beta shape: (C,)
-        
+        # Generalize to any dimensionality N >= 2
+        # Normalise over all dimensions except the second (index 1, channel/feature dim)
+        self.stats_axes = (0,) + tuple(range(2, x.ndim))
         self.batch_size = x.shape[0]
-        if x.ndim == 4:
-            # Conv2d case: (N, C, H, W)
-            # Normalise over (N, H, W)
-            self.spatial_dims = (0, 2, 3)
-            gamma_reshaped = gamma.reshape(1, -1, 1, 1)
-            beta_reshaped = beta.reshape(1, -1, 1, 1)
-        else:
-            # Linear case: (N, C)
-            self.spatial_dims = (0,)
-            gamma_reshaped = gamma
-            beta_reshaped = beta
+        
+        # Reshape gamma and beta for broadcasting: (1, C, 1, 1, ...)
+        reshape_shape = [1] * x.ndim
+        reshape_shape[1] = -1
+        gamma_reshaped = gamma.reshape(*reshape_shape)
+        beta_reshaped = beta.reshape(*reshape_shape)
 
-        mean = x.mean(axis=self.spatial_dims, keepdims=True)
-        var = x.var(axis=self.spatial_dims, keepdims=True)
+        mean = x.mean(axis=self.stats_axes, keepdims=True)
+        var = x.var(axis=self.stats_axes, keepdims=True)
         
         self.x_centered = x - mean
         self.std_inv = 1.0 / np.sqrt(var + self.eps)
@@ -45,29 +39,24 @@ class BatchNormOp(Operation):
         # parents: [x, gamma, beta]
         gamma = node.parents[1].value
         
-        if output_grad.ndim == 4:
-            gamma_reshaped = gamma.reshape(1, -1, 1, 1)
-            # m is N * H * W
-            m = self.batch_size * output_grad.shape[2] * output_grad.shape[3]
-            axis = (0, 2, 3)
-        else:
-            gamma_reshaped = gamma
-            m = self.batch_size
-            axis = (0,)
+        reshape_shape = [1] * output_grad.ndim
+        reshape_shape[1] = -1
+        gamma_reshaped = gamma.reshape(*reshape_shape)
+        
+        # Total number of elements in normalization dimensions
+        m = np.prod([output_grad.shape[i] for i in self.stats_axes])
 
-        d_beta = output_grad.sum(axis=axis)
-        d_gamma = (output_grad * self.x_hat).sum(axis=axis)
+        d_beta = output_grad.sum(axis=self.stats_axes)
+        d_gamma = (output_grad * self.x_hat).sum(axis=self.stats_axes)
         dx_hat = output_grad * gamma_reshaped
         
-        # d_var = sum(dx_hat * (x - mean) * -0.5 * (var + eps)^-1.5)
-        #       = sum(dx_hat * x_centered * -0.5 * std_inv^3)
-        dvar = (dx_hat * self.x_centered * -0.5 * (self.std_inv**3)).sum(axis=axis, keepdims=True)
+        # d_var = sum(dx_hat * x_centered * -0.5 * std_inv^3)
+        dvar = (dx_hat * self.x_centered * -0.5 * (self.std_inv**3)).sum(axis=self.stats_axes, keepdims=True)
         
-        # d_mean = sum(dx_hat * -std_inv) + dvar * sum(-2 * (x - mean)) / m
-        # since sum(x - mean) = 0, d_mean = sum(dx_hat * -std_inv)
-        dmean = (dx_hat * -self.std_inv).sum(axis=axis, keepdims=True)
+        # d_mean = sum(dx_hat * -std_inv)
+        dmean = (dx_hat * -self.std_inv).sum(axis=self.stats_axes, keepdims=True)
         
-        # dx = dx_hat * std_inv + dvar * 2 * (x - mean) / m + dmean / m
+        # dx = dx_hat * std_inv + dvar * 2 * x_centered / m + dmean / m
         dx = dx_hat * self.std_inv + dvar * 2 * self.x_centered / m + dmean / m
         
         return [dx, d_gamma, d_beta]
@@ -87,16 +76,13 @@ class BatchNorm(Module):
         self.running_var = np.ones(num_features)
 
     def forward(self, x: Node) -> Node:
-        # x: (N, C) or (N, C, H, W)
+        # x: (N, C, ...) 
         if self.training:
             op = BatchNormOp(self.eps)
             out_val = op.forward(x.value, self.gamma.value, self.beta.value)
             
-            # Update running stats
-            if x.value.ndim == 4:
-                axis = (0, 2, 3)
-            else:
-                axis = (0,)
+            # Use same axis logic for running stats update
+            axis = (0,) + tuple(range(2, x.value.ndim))
                 
             batch_mean = x.value.mean(axis=axis)
             batch_var = x.value.var(axis=axis)
@@ -107,16 +93,13 @@ class BatchNorm(Module):
             return Node(out_val, parents=[x, self.gamma, self.beta], op=op)
         else:
             # Inference mode
-            if x.value.ndim == 4:
-                rm = self.running_mean.reshape(1, -1, 1, 1)
-                rv = self.running_var.reshape(1, -1, 1, 1)
-                g = self.gamma.value.reshape(1, -1, 1, 1)
-                b = self.beta.value.reshape(1, -1, 1, 1)
-            else:
-                rm = self.running_mean
-                rv = self.running_var
-                g = self.gamma.value
-                b = self.beta.value
+            reshape_shape = [1] * x.value.ndim
+            reshape_shape[1] = -1
+            
+            rm = self.running_mean.reshape(*reshape_shape)
+            rv = self.running_var.reshape(*reshape_shape)
+            g = self.gamma.value.reshape(*reshape_shape)
+            b = self.beta.value.reshape(*reshape_shape)
                 
             out_val = g * (x.value - rm) / np.sqrt(rv + self.eps) + b
             return Node(out_val, parents=[], op=None) # Leaf node in inference usually
