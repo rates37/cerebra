@@ -124,3 +124,74 @@ class TestBatchNorm(unittest.TestCase):
     def test_bn_backward_4d(self):
         self._check_bn_backward((2, 2, 4, 4))
 
+    def test_bn_n1(self):
+        # N=1 case: variance should be 0, handled by eps
+        C = 3
+        bn = BatchNorm(C)
+        x = Node(np.ones((1, C)) * 5.0)
+        # Use op directly to ensure forward state is present for backward
+        op = BatchNormOp()
+        out_val = op.forward(x.value, bn.gamma.value, bn.beta.value)
+        y = Node(out_val, parents=[x, bn.gamma, bn.beta], op=op)
+        
+        self.assertTrue(np.allclose(y.value, np.zeros((1, C)), atol=EPSILON))
+
+        grad_out = np.ones((1, C))
+        grads = op.backward(grad_out, y)
+        self.assertEqual(len(grads), 3)
+
+    def test_bn_zero_variance(self):
+        # Input with all elements same -> zero variance
+        N, C = 2, 2
+        x = Node(np.full((N, C), 7.0))
+        bn = BatchNorm(C)
+        y = bn(x)
+        self.assertTrue(np.allclose(y.value, np.zeros((N, C)), atol=EPSILON))
+
+    def test_bn_large_values(self):
+        # Stability test with large values
+        N, C = 2, 2
+        x = Node(np.full((N, C), 1e6))
+        # add some non identical
+        x.value[0, 0] += 1.0
+        bn = BatchNorm(C)
+        y = bn(x)
+        self.assertTrue(np.all(np.isfinite(y.value)))
+        
+    def test_bn_momentum_update(self):
+        C = 2
+        momentum = 0.5
+        bn = BatchNorm(C, momentum=momentum)
+        original_mean = bn.running_mean.copy()
+        
+        x = Node(np.array([[2.0, 4.0], [2.0, 4.0]])) # mean [2.0, 4.0]
+        bn(x)
+        
+        expected_mean = (1 - momentum) * original_mean + momentum * np.array([2.0, 4.0])
+        self.assertTrue(np.allclose(bn.running_mean, expected_mean, atol=EPSILON))
+
+    def test_bn_spatial_1x1(self):
+        # 4D case with 1x1 spatial dimensions
+        N, C, H, W = 2, 3, 1, 1
+        x = self.default_rng.random((N, C, H, W))
+        bn = BatchNorm(C)
+        y = bn(Node(x))
+        self.assertEqual(y.value.shape, (N, C, H, W))
+        
+        self._check_bn_backward((N, C, H, W))
+
+    def test_bn_3d(self):
+        N, C, L = 2, 3, 4
+        x = self.default_rng.random((N, C, L))
+        bn = BatchNorm(C)
+        y = bn(Node(x))
+        self.assertEqual(y.value.shape, (N, C, L))
+        self._check_bn_backward((N, C, L))
+
+    def test_bn_5d(self):
+        N, C, D, H, W = 2, 2, 2, 2, 2
+        x = self.default_rng.random((N, C, D, H, W))
+        bn = BatchNorm(C)
+        y = bn(Node(x))
+        self.assertEqual(y.value.shape, (N, C, D, H, W))
+        self._check_bn_backward((N, C, D, H, W))
