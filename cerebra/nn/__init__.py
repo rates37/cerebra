@@ -5,4 +5,4 @@ from .conv import convert_to_col, convert_from_col, Conv2d, Conv2dLayer
 from .pool import MaxPool2DOp, AvgPool2DOp, MaxPool2D, AvgPool2D
 from .activations import ReLU, relu, Sigmoid, sigmoid, Tanh, tanh, LeakyReLU, leaky_relu, ELU, elu
 from .dropout import DropoutOp, dropout, Dropout
-from .normalisation import BatchNorm, BatchNormOp
+from .normalisation import BatchNorm, LayerNorm, BatchNormOp, LayerNormOp
