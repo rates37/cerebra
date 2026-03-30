@@ -104,3 +104,52 @@ class BatchNorm(Module):
             out_val = g * (x.value - rm) / np.sqrt(rv + self.eps) + b
             return Node(out_val, parents=[], op=None) # Leaf node in inference usually
 
+class LayerNormOp(Operation):
+    def __init__(self, eps: float = 1e-5):
+        self.eps = eps
+        self.x_centered = None
+        self.std_inv = None
+        self.x_hat = None
+
+    def forward(self, x: np.ndarray, gamma: np.ndarray, beta: np.ndarray) -> np.ndarray:
+        # x shape: (N, D)
+        # Normalise over D
+        self.axis = -1 
+        mean = x.mean(axis=self.axis, keepdims=True)
+        var = x.var(axis=self.axis, keepdims=True)
+        
+        self.x_centered = x - mean
+        self.std_inv = 1.0 / np.sqrt(var + self.eps)
+        self.x_hat = self.x_centered * self.std_inv
+        
+        return gamma * self.x_hat + beta
+
+    def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
+        gamma = node.parents[1].value
+        d_beta = output_grad.sum(axis=0)
+        d_gamma = (output_grad * self.x_hat).sum(axis=0)
+        
+        dx_hat = output_grad * gamma
+        
+        # normalisation happens per sample
+        # D is the dimension of the features
+        D = output_grad.shape[-1]
+        
+        dvar = (dx_hat * self.x_centered * -0.5 * (self.std_inv**3)).sum(axis=-1, keepdims=True)
+        dmean = (dx_hat * -self.std_inv).sum(axis=-1, keepdims=True)
+        
+        dx = dx_hat * self.std_inv + dvar * 2 * self.x_centered / D + dmean / D
+        
+        return [dx, d_gamma, d_beta]
+
+class LayerNorm(Module):
+    def __init__(self, normalised_shape: int, eps: float = 1e-5):
+        super().__init__()
+        self.eps = eps
+        self.gamma = Parameter(np.ones(normalised_shape), name="ln_gamma")
+        self.beta = Parameter(np.zeros(normalised_shape), name="ln_beta")
+
+    def forward(self, x: Node) -> Node:
+        op = LayerNormOp(self.eps)
+        out_val = op.forward(x.value, self.gamma.value, self.beta.value)
+        return Node(out_val, parents=[x, self.gamma, self.beta], op=op)
