@@ -1,8 +1,7 @@
 import unittest
 import numpy as np
 from cerebra import Node, Linear
-
-EPSILON = 1e-6
+from tests.utils import EPSILON
 
 
 class TestLinear(unittest.TestCase):

@@ -1,10 +1,7 @@
 import unittest
 import numpy as np
-from typing import Callable
 from cerebra import Node, relu, sigmoid, tanh, leaky_relu, elu
-
-
-EPSILON = 1e-6
+from tests.utils import EPSILON
 
 
 class TestActivationFunction(unittest.TestCase):

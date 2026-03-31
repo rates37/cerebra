@@ -1,8 +1,7 @@
 import unittest
 import numpy as np
 from cerebra import Node, cross_entropy_loss
-
-EPSILON = 1e-6
+from tests.utils import EPSILON
 
 
 class TestCELoss(unittest.TestCase):

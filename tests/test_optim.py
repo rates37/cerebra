@@ -2,8 +2,7 @@ import unittest
 import numpy as np
 from cerebra import Parameter
 from cerebra.optim import SGD
-
-EPSILON = 1e-6
+from tests.utils import EPSILON
 
 
 class TestOptim(unittest.TestCase):
