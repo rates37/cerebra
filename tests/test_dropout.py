@@ -1,9 +1,7 @@
 import unittest
 import numpy as np
-from typing import Callable
 from cerebra import Node, Parameter, Operation, Dropout
-
-EPSILON = 1e-6
+from tests.utils import EPSILON
 
 
 class TestDropout(unittest.TestCase):

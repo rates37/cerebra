@@ -1,35 +1,7 @@
 import unittest
 import numpy as np
-from typing import Callable
 from cerebra import Node, LayerNorm, LayerNormOp
-
-EPSILON = 1e-6
-
-def numerical_gradient(func: Callable[[], Node], node: Node, h=1e-6) -> np.ndarray:
-    input_value = node.value.copy()
-    grad = np.zeros_like(input_value, dtype=np.float64)
-
-    for i in np.ndindex(input_value.shape):
-        val = input_value[i]
-
-        # calculate f(x+h):
-        x_plus_h = input_value.copy()
-        x_plus_h[i] = val + h
-        node.value = x_plus_h
-        f_x_plus_h = func().value.item()
-
-        # calculate f(x-h):
-        x_minus_h = input_value.copy()
-        x_minus_h[i] = val - h
-        node.value = x_minus_h
-        f_x_minus_h = func().value.item()
-
-        # central difference method:
-        grad[i] = (f_x_plus_h - f_x_minus_h) / (2 * h)
-
-    # restore input value of node
-    node.value = input_value
-    return grad
+from tests.utils import EPSILON, numerical_gradient
 
 class TestLayerNorm(unittest.TestCase):
     def setUp(self) -> None:

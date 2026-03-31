@@ -3,8 +3,7 @@ import numpy as np
 
 from cerebra import Node, relu, no_grad, is_grad_enabled
 from cerebra.core import unbroadcast
-
-EPSILON = 1e-6
+from tests.utils import EPSILON
 
 
 class TestNode(unittest.TestCase):
