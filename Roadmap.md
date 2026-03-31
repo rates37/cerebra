@@ -7,8 +7,6 @@ This file outlines planned features, improvements, and ongoing goals.
 | Feature                             | Priority | Notes                                                                                   |
 | ----------------------------------- | -------- | --------------------------------------------------------------------------------------- |
 | Documentation                       | High     | Add docstrings and examples                                                             |
-| Batchnorm                           | Medium   |                                                                                         |
-| Layernorm                           | Medium   |                                                                                         |
 | Graph pruning / memory optimisation | Medium   | E.g., ~~no_grad context~~, detach, etc                                                  |
 | Transformer/Attention layers        | Medium   |                                                                                         |
 | Model saving / loading utility      | Medium   |                                                                                         |
@@ -33,6 +31,7 @@ This file outlines planned features, improvements, and ongoing goals.
 | Activation functions | Added common activations functions `sigmoid`, `tanh`, `elu`, `leaky_relu` | v0.0.1      |
 | Dropout              | Added dropout layers, works with any generalised input shape              | v0.0.1      |
 | Unit Test Coverage   | Added unit tests for all core components                                  | v0.0.1      |
+| Normalisation        | Added batchnorm and layernorm layers                                      | v0.0.1      |
 
 ---
 
