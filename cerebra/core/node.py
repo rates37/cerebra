@@ -25,6 +25,7 @@ _GRAD_ENABLED = True
 
 
 class Node:
+    """Represents a node in the computational graph, storing a value and its gradient."""
     def __init__(
         self,
         value: Union[np.ndarray, float, int],
@@ -32,6 +33,14 @@ class Node:
         op: Optional[Operation] = None,
         name: Optional[str] = None
     ) -> None:
+        """Initialises a computational graph node.
+
+        Args:
+            value (Union[np.ndarray, float, int]): The numerical value of the node.
+            parents (Optional[List[Node]], optional): The parent nodes in the computational graph. Defaults to None.
+            op (Optional[Operation], optional): The operation that produced this node. Defaults to None.
+            name (Optional[str], optional): An optional name for the node. Defaults to None.
+        """
         if not isinstance(value, np.ndarray):
             value = np.array(value)
         self.value = value
@@ -46,6 +55,16 @@ class Node:
             self.op = None
 
     def backward(self, grad: Optional[np.ndarray] = None) -> None:
+        """Computes the gradient of the current node with respect to its ancestors.
+        
+        Performs backpropagation starting from this node. It first topologically 
+        sorts all ancestors, initialises their gradients to zero, and then propagates 
+        the gradients backwards through the computation graph.
+
+        Args:
+            grad (Optional[np.ndarray], optional): The upstream gradient. If None, 
+                it is assumed to be an array of ones. Defaults to None.
+        """
         nodes = self.top_sort_ancestors()
         for node in nodes:
             node.grad = np.zeros_like(node.value)
@@ -59,6 +78,15 @@ class Node:
                     parent.grad = parent.grad + g
 
     def top_sort_ancestors(self) -> List[Node]:
+        """Performs a topological sort of the node's ancestors.
+        
+        Uses depth-first search to traverse the computation graph starting from this 
+        node up to the leaf nodes.
+
+        Returns:
+            List[Node]: A topologically sorted list of ancestor nodes, such that 
+                parents appear before their children.
+        """
         visited = set()
         order = []
 
@@ -140,10 +168,31 @@ class Variable(Node):
 
 
 def to_node(x: Union[Node, np.ndarray, float, int]) -> Node:
+    """Converts an input to a Node object.
+
+    Args:
+        x (Union[Node, np.ndarray, float, int]): The input to convert.
+
+    Returns:
+        Node: The resulting Node object.
+    """
     return x if isinstance(x, Node) else Node(x)
 
 
 def unbroadcast(grad: np.ndarray, shape: Tuple[int, ...]) -> np.ndarray:
+    """Reduces dimensions of the gradient to match the original shape by summing over broadcasted dimensions.
+    
+    In Numpy broadcasting, a shape might be expanded. This function reverses 
+    that process by summing out the extra dimensions or dimensions that were 
+    broadcasted from size 1, ensuring the gradient shape matches the expected shape.
+
+    Args:
+        grad (np.ndarray): The gradient array that may have been broadcasted.
+        shape (Tuple[int, ...]): The target shape to reduce the gradient to.
+
+    Returns:
+        np.ndarray: The unbroadcasted gradient array.
+    """
     # reduce extra dimensions introduced by broadcasting:
     while len(grad.shape) > len(shape):
         grad = grad.sum(axis=0)

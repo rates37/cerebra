@@ -7,6 +7,22 @@ from .module import Parameter, Module
 
 # function to convert a convolutional filter(s) to columns:
 def convert_to_col(x: np.ndarray, kernel_h: int, kernel_w: int, stride: Union[int, Tuple[int, int]], padding: Union[int, Tuple[int, int]]) -> Tuple[np.ndarray, int, int]:
+    """Converts a convolutional filter(s) to columns.
+    
+    Transforms the input tensor into a column matrix used to perform 
+    convolution as a matrix multiplication.
+
+    Args:
+        x (np.ndarray): The input tensor of shape (N, C, H, W).
+        kernel_h (int): The height of the convolution kernel.
+        kernel_w (int): The width of the convolution kernel.
+        stride (Union[int, Tuple[int, int]]): The stride of the convolution.
+        padding (Union[int, Tuple[int, int]]): The zero-padding added to both sides of the input.
+
+    Returns:
+        Tuple[np.ndarray, int, int]: A tuple containing the column matrix, 
+            the output height, and the output width.
+    """
     # extract shape
     N, C, H, W = x.shape
 
@@ -47,6 +63,19 @@ def convert_to_col(x: np.ndarray, kernel_h: int, kernel_w: int, stride: Union[in
 
 def convert_from_col(cols: np.ndarray, x_shape: Tuple[int, int, int, int], kernel_h: int,
                       kernel_w: int, stride: Union[int, Tuple[int, int]], padding: Union[int, Tuple[int, int]]) -> np.ndarray:
+    """Converts the expanded column tensor back to its original shape.
+
+    Args:
+        cols (np.ndarray): The column matrix to be reshaped.
+        x_shape (Tuple[int, int, int, int]): The original shape (N, C, H, W) of the input.
+        kernel_h (int): The height of the convolution kernel.
+        kernel_w (int): The width of the convolution kernel.
+        stride (Union[int, Tuple[int, int]]): The stride of the convolution.
+        padding (Union[int, Tuple[int, int]]): The padding of the convolution.
+
+    Returns:
+        np.ndarray: The reshaped tensor with the original shape.
+    """
     # convert the tensor from the expanded column tensor back to original shape
     # x_shape = (N, C, H, W)
     N, C, H, W = x_shape
@@ -83,7 +112,17 @@ def convert_from_col(cols: np.ndarray, x_shape: Tuple[int, int, int, int], kerne
 
 
 class Conv2d(Operation):
+    """2D Convolution operation.
+    
+    Performs a 2D convolution over an input image composed of several input planes.
+    """
     def __init__(self, stride: Union[int, Tuple[int, int]] = 1, padding: Union[int, Tuple[int, int]] = 0) -> None:
+        """Initialises the 2D convolution operation.
+
+        Args:
+            stride (Union[int, Tuple[int, int]], optional): Stride of the convolution. Defaults to 1.
+            padding (Union[int, Tuple[int, int]], optional): Zero-padding added to both sides of the input. Defaults to 0.
+        """
         self.stride = stride
         self.padding = padding
 
@@ -146,6 +185,11 @@ class Conv2d(Operation):
 
 
 class Conv2dLayer(Module):
+    """Applies a 2D convolution over an input signal.
+    
+    This module encapsulates the weights, biases, and parameters necessary to 
+    perform a 2D convolution operation as part of a neural network layer.
+    """
     def __init__(self,
                  in_channels: int,
                  out_channels: int,
@@ -172,6 +216,14 @@ class Conv2dLayer(Module):
             self.bias = None
 
     def forward(self, x: Node) -> Node:
+        """Applies convolution forward pass.
+
+        Args:
+            x (Node): The input node with shape (N, C, H, W).
+
+        Returns:
+            Node: Output node after applying the 2D convolution.
+        """
         weight = to_node(self.weight)
         op = Conv2d(self.stride, self.padding)
 

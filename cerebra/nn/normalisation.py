@@ -5,7 +5,13 @@ from ..core.ops import Operation
 from .module import Parameter, Module
 
 class BatchNormOp(Operation):
+    """Batch Normalisation operation."""
     def __init__(self, eps: float = 1e-5):
+        """Initialises the batch norm operation.
+
+        Args:
+            eps (float, optional): A value added to the denominator for numerical stability. Defaults to 1e-5.
+        """
         self.eps = eps
         # store for backward
         self.x_centered = None
@@ -15,6 +21,17 @@ class BatchNormOp(Operation):
         self.spatial_dims = None
 
     def forward(self, x: np.ndarray, gamma: np.ndarray, beta: np.ndarray) -> np.ndarray:
+        """
+        Performs the forward pass of the batch normalisation operation.
+
+        Args:
+            x (np.ndarray): The input tensor.
+            gamma (np.ndarray): Learnable scale parameter.
+            beta (np.ndarray): Learnable shift parameter.
+
+        Returns:
+            np.ndarray: The output tensor after applying batch normalisation.
+        """
         # Generalize to any dimensionality N >= 2
         # Normalise over all dimensions except the second (index 1, channel/feature dim)
         self.stats_axes = (0,) + tuple(range(2, x.ndim))
@@ -36,6 +53,16 @@ class BatchNormOp(Operation):
         return gamma_reshaped * self.x_hat + beta_reshaped
 
     def backward(self, output_grad: np.ndarray, node: Node) -> List[np.ndarray]:
+        """
+        Performs the backward pass of the batch normalisation operation.
+
+        Args:
+            output_grad (np.ndarray): The gradient of the output.
+            node (Node): The output node.
+
+        Returns:
+            List[np.ndarray]: A list of gradients for each parent of the node.
+        """
         # parents: [x, gamma, beta]
         gamma = node.parents[1].value
         
@@ -62,7 +89,18 @@ class BatchNormOp(Operation):
         return [dx, d_gamma, d_beta]
 
 class BatchNorm(Module):
+    """Batch Normalisation layer.
+    
+    Applies Batch Normalisation over an input.
+    """
     def __init__(self, num_features: int, eps: float = 1e-5, momentum: float = 0.1):
+        """Initialises the batch normalisation layer.
+
+        Args:
+            num_features (int): Number of features or channels (C) from an expected input.
+            eps (float, optional): A value added to the denominator for numerical stability. Defaults to 1e-5.
+            momentum (float, optional): The value used for the running_mean and running_var computation. Defaults to 0.1.
+        """
         super().__init__()
         self.num_features = num_features
         self.eps = eps
@@ -105,7 +143,13 @@ class BatchNorm(Module):
             return Node(out_val, parents=[], op=None) # Leaf node in inference usually
 
 class LayerNormOp(Operation):
+    """Layer Normalisation operation."""
     def __init__(self, eps: float = 1e-5):
+        """Initialises the layer normalisation operation.
+
+        Args:
+            eps (float, optional): A value added to the denominator for numerical stability. Defaults to 1e-5.
+        """
         self.eps = eps
         self.x_centered = None
         self.std_inv = None
@@ -143,7 +187,17 @@ class LayerNormOp(Operation):
         return [dx, d_gamma, d_beta]
 
 class LayerNorm(Module):
+    """Layer Normalisation layer.
+    
+    Applies Layer Normalisation over a mini-batch of inputs.
+    """
     def __init__(self, normalised_shape: int, eps: float = 1e-5):
+        """Initialises the layer normalisation layer.
+
+        Args:
+            normalised_shape (int): The expected shape/features to be normalised.
+            eps (float, optional): A value added to the denominator for numerical stability. Defaults to 1e-5.
+        """
         super().__init__()
         self.eps = eps
         self.gamma = Parameter(np.ones(normalised_shape), name="ln_gamma")

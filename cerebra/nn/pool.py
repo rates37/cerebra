@@ -8,7 +8,18 @@ from .module import Module
 # 2D Pooling layer Operations/Functions:
 
 class MaxPool2DOp(Operation):
+    """2D Max Pooling operation."""
     def __init__(self, kernel_size: Tuple[int, int], stride: Union[int, Tuple[int, int]] = 1, padding: Union[int, Tuple[int, int]] = 0) -> None:
+        """Initialises the 2D max pooling operation.
+
+        Args:
+            kernel_size (Tuple[int, int]): the size of the window to take a max over.
+            stride (Union[int, Tuple[int, int]], optional): the stride of the window. Can be int or 
+                tuple of two ints (representing horizontal and vertical stride). Defaults to 1.
+            padding (Union[int, Tuple[int, int]], optional): implicit zero padding to be added on
+                both sides. Can be int or tuple of two ints (representing horizontal and vertical
+                padding). Defaults to 0.
+        """
         self.kh, self.kw = kernel_size
         self.stride = stride
         self.padding = padding
@@ -50,7 +61,18 @@ class MaxPool2DOp(Operation):
 
 
 class AvgPool2DOp(Operation):
+    """2D Average Pooling operation."""
     def __init__(self, kernel_size: Tuple[int, int], stride: Union[int, Tuple[int, int]] = 1, padding: Union[int, Tuple[int, int]] = 0) -> None:
+        """Initialises the 2D average pooling operation.
+
+        Args:
+            kernel_size (Tuple[int, int]): the size of the window to take an average over.
+            stride (Union[int, Tuple[int, int]], optional): the stride of the window. Can be int or 
+                tuple of two ints (representing horizontal and vertical stride). Defaults to 1.
+            padding (Union[int, Tuple[int, int]], optional): implicit zero padding to be added on
+                both sides. Can be int or tuple of two ints (representing horizontal and vertical
+                padding). Defaults to 0.
+        """
         self.kh, self.kw = kernel_size
         self.stride = stride
         self.padding = padding
@@ -88,6 +110,10 @@ class AvgPool2DOp(Operation):
 
 
 class MaxPool2D(Module):
+    """2D Max Pooling layer.
+    
+    Applies a 2D max pooling over an input signal composed of several input planes.
+    """
     def __init__(self,
                  kernel_size: Union[int, Tuple[int, int]],
                  stride: Union[int, Tuple[int, int]] = 1,
@@ -107,6 +133,10 @@ class MaxPool2D(Module):
 
 
 class AvgPool2D(Module):
+    """2D Average Pooling layer.
+    
+    Applies a 2D average pooling over an input signal composed of several input planes.
+    """
     def __init__(self,
                  kernel_size: Union[int, Tuple[int, int]],
                  stride: Union[int, Tuple[int, int]] = 1,
