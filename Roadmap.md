@@ -24,14 +24,14 @@ This file outlines planned features, improvements, and ongoing goals.
 
 ## Completed Features
 
-| Feature              | Description                                                               | Released In |
-| -------------------- | ------------------------------------------------------------------------- | ----------- |
-| `no_grad`            | A context manager that disables automatic gradient tracking               | v0.0.1      |
-| Activation functions | Added common activations functions `sigmoid`, `tanh`, `elu`, `leaky_relu` | v0.0.1      |
-| Dropout              | Added dropout layers, works with any generalised input shape              | v0.0.1      |
-| Unit Test Coverage   | Added unit tests for all core components                                  | v0.0.1      |
-| Normalisation        | Added batchnorm and layernorm layers                                      | v0.0.1      |
-| Documentation        | Added docstrings                                                          | v0.0.1      |
+| Feature              | Description                                                               |
+| -------------------- | ------------------------------------------------------------------------- |
+| `no_grad`            | A context manager that disables automatic gradient tracking               |
+| Activation functions | Added common activations functions `sigmoid`, `tanh`, `elu`, `leaky_relu` |
+| Dropout              | Added dropout layers, works with any generalised input shape              |
+| Unit Test Coverage   | Added unit tests for all core components                                  |
+| Normalisation        | Added batchnorm and layernorm layers                                      |
+| Documentation        | Added docstrings                                                          |
 
 ---
 
