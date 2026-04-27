@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 from cerebra import Node, MaxPool2DOp, MaxPool2D, AvgPool2DOp, AvgPool2D, no_grad
 from tests.utils import EPSILON, numerical_gradient
-
+from typing import Optional
 
 class TestMaxPool2d(unittest.TestCase):
     def setUp(self) -> None:
