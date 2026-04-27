@@ -6,19 +6,18 @@ This file outlines planned features, improvements, and ongoing goals.
 
 | Feature                             | Priority | Notes                                                                                   |
 | ----------------------------------- | -------- | --------------------------------------------------------------------------------------- |
+| More optimisers                     | Medium   | ADAM, Adagrad, etc.                                                                     |
+| Flatten layer                       | Low      |                                                                                         |
 | Graph pruning / memory optimisation | Medium   | E.g., ~~no_grad context~~, detach, etc                                                  |
-| Transformer/Attention layers        | Medium   |                                                                                         |
-| Model saving / loading utility      | Medium   |                                                                                         |
-| Regularisation                      | Medium   |                                                                                         |
-| Graph visualisation                 | Low      | Eg to mermaid diagrams                                                                  |
+| RNN layers                          | Medium   |                                                                                         |
+| Optimise implementations            | Low      | Some features may be inefficiently implemented such as using for loops in Conv2d layers |
 | Dataset and Dataloaders             | Medium   |                                                                                         |
 | Trainer classes                     | Medium   |                                                                                         |
-| Optimise implementations            | Low      | Some features may be inefficiently implemented such as using for loops in Conv2d layers |
-| More optimisers                     | Medium   | ADAM, Adagrad, etc.                                                                     |
+| Model saving / loading utility      | Medium   |                                                                                         |
+| Transformer/Attention layers        | Medium   |                                                                                         |
 | Learning Rate Schedulers            | Low      |                                                                                         |
-| RNN layers                          | Medium   |                                                                                         |
 | ConvTranspose layers                | Medium   |                                                                                         |
-| Flatten layer                       | Low      |                                                                                         |
+| Graph visualisation                 | Low      | Eg to mermaid diagrams                                                                  |
 
 ---
 
